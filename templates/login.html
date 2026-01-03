@@ -177,7 +177,7 @@
         }
         
         // Vérifier si déjà connecté
-        const token = localStorage.getItem('bioIdAccessToken');
+        const token = localStorage.getItem('bioIdToken');
         if (token) {
             window.location.href = '/';
         } else {
@@ -202,7 +202,7 @@
                 
                 if (data.success) {
                     // Stocker les tokens JWT
-                    localStorage.setItem('bioIdAccessToken', data.data.access_token);
+                    localStorage.setItem('bioIdToken', data.data.access_token);
                     localStorage.setItem('bioIdRefreshToken', data.data.refresh_token);
                     localStorage.setItem('bioIdUser', JSON.stringify({
                         username: data.data.username,

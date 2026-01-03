@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 import json
 import os
 from datetime import datetime
+from typing import Dict, List, Tuple
 
 
 class BiometricMetrics:
@@ -242,7 +243,7 @@ class BiometricMetrics:
         report["risks"] = self._analyze_risks()
         
         return report
-    
+
     def _analyze_risks(self):
         """Analyse des risques du système"""
         risks = []
@@ -280,7 +281,277 @@ class BiometricMetrics:
         })
         
         return risks
-    
+
+    def analyze_demographic_bias(self, demographic_data: Dict) -> Dict:
+        """
+        Analyse les biais démographiques dans les performances
+
+        Args:
+            demographic_data: Données démographiques structurées
+
+        Returns:
+            Dict: Analyse détaillée des biais
+        """
+        bias_analysis = {
+            "analysis_date": datetime.now().isoformat(),
+            "demographic_groups": {},
+            "fairness_metrics": {},
+            "bias_indicators": [],
+            "recommendations": []
+        }
+
+        # Analyser chaque dimension démographique
+        for dimension, groups in demographic_data.items():
+            group_analysis = {}
+
+            for group_name, scores in groups.items():
+                if not scores:
+                    continue
+
+                scores_array = np.array(scores)
+                genuine_scores = scores_array[scores_array < 0.5]
+                impostor_scores = scores_array[scores_array >= 0.5]
+
+                group_analysis[group_name] = {
+                    "sample_size": len(scores),
+                    "mean_score": float(np.mean(scores_array)),
+                    "std_score": float(np.std(scores_array)),
+                    "genuine_rate": len(genuine_scores) / len(scores_array) if scores_array.size > 0 else 0,
+                    "accuracy": self._calculate_group_accuracy(scores_array)
+                }
+
+            bias_analysis["demographic_groups"][dimension] = group_analysis
+
+            # Calculer les métriques de biais pour cette dimension
+            if len(group_analysis) >= 2:
+                bias_metrics = self._calculate_bias_metrics(group_analysis)
+                bias_analysis["fairness_metrics"][dimension] = bias_metrics
+
+                # Détecter les biais significatifs
+                for metric_name, metric_value in bias_metrics.items():
+                    if abs(metric_value) > 0.05:
+                        bias_analysis["bias_indicators"].append({
+                            "dimension": dimension,
+                            "metric": metric_name,
+                            "value": metric_value,
+                            "severity": "high" if abs(metric_value) > 0.1 else "medium",
+                            "description": f"Biais détecté dans {dimension} ({metric_name}: {metric_value:.3f})"
+                        })
+
+        # Générer des recommandations
+        if bias_analysis["bias_indicators"]:
+            bias_analysis["recommendations"].extend([
+                "Diversify training dataset to reduce demographic bias",
+                "Implement fairness-aware algorithms",
+                "Regular bias monitoring and reporting",
+                "Consider alternative verification methods for biased groups"
+            ])
+
+        return bias_analysis
+
+    def _calculate_group_accuracy(self, scores: np.ndarray) -> float:
+        """Calcule la précision pour un groupe démographique"""
+        estimated_accuracy = np.mean(scores < 0.5)
+        return float(estimated_accuracy)
+
+    def _calculate_bias_metrics(self, group_analysis: Dict) -> Dict:
+        """Calcule les métriques de biais entre groupes"""
+        metrics = {}
+
+        if len(group_analysis) < 2:
+            return metrics
+
+        accuracies = {group: data["accuracy"] for group, data in group_analysis.items()}
+        acc_values = list(accuracies.values())
+        mean_accuracy = np.mean(acc_values)
+        
+        metrics["mean_absolute_bias"] = float(np.mean([abs(acc - mean_accuracy) for acc in acc_values]))
+        metrics["max_bias"] = float(max(acc_values) - min(acc_values))
+
+        if max(acc_values) > 0:
+            metrics["accuracy_ratio"] = float(min(acc_values) / max(acc_values))
+
+        metrics["normalized_disparity"] = float((max(acc_values) - min(acc_values)) / mean_accuracy) if mean_accuracy > 0 else 0
+
+        return metrics
+
+    def analyze_fairness_constraints(self, threshold: float, demographic_data: Dict) -> Dict:
+        """Analyse les contraintes d'équité pour un seuil donné"""
+        fairness_analysis = {
+            "threshold": threshold,
+            "group_fairness": {},
+            "overall_fairness_score": 0,
+            "fairness_violations": []
+        }
+
+        for dimension, groups in demographic_data.items():
+            group_fairness = {}
+
+            for group_name, scores in groups.items():
+                if not scores:
+                    continue
+
+                scores_array = np.array(scores)
+                far, frr = self._calculate_group_far_frr(scores_array, threshold)
+
+                group_fairness[group_name] = {
+                    "far": far,
+                    "frr": frr,
+                    "sample_size": len(scores),
+                    "fairness_score": 1 - abs(far - frr)
+                }
+
+            fairness_analysis["group_fairness"][dimension] = group_fairness
+
+            fairness_scores = [data["fairness_score"] for data in group_fairness.values()]
+            if fairness_scores:
+                min_fairness = min(fairness_scores)
+                max_fairness = max(fairness_scores)
+                disparity = max_fairness - min_fairness
+
+                if disparity > 0.2:
+                    fairness_analysis["fairness_violations"].append({
+                        "dimension": dimension,
+                        "disparity": disparity,
+                        "description": f"Équité compromise dans {dimension} (disparité: {disparity:.3f})"
+                    })
+
+        all_fairness_scores = []
+        for dimension_data in fairness_analysis["group_fairness"].values():
+            all_fairness_scores.extend([data["fairness_score"] for data in dimension_data.values()])
+
+        if all_fairness_scores:
+            fairness_analysis["overall_fairness_score"] = float(np.mean(all_fairness_scores))
+
+        return fairness_analysis
+
+    def _calculate_group_far_frr(self, scores: np.ndarray, threshold: float) -> Tuple[float, float]:
+        """Calcule FAR et FRR pour un groupe spécifique"""
+        genuine_scores = scores[scores < threshold]
+        impostor_scores = scores[scores >= threshold]
+
+        far = len(impostor_scores) / len(scores) if len(scores) > 0 else 0
+        frr = len(genuine_scores) / len(scores) if len(scores) > 0 else 0
+
+        return float(far), float(frr)
+
+    def generate_bias_report(self, demographic_data: Dict = None) -> Dict:
+        """Génère un rapport complet sur les biais et l'équité"""
+        report = {
+            "report_date": datetime.now().isoformat(),
+            "bias_analysis": {},
+            "fairness_analysis": {},
+            "system_limitations": [],
+            "recommendations": []
+        }
+
+        if demographic_data:
+            report["bias_analysis"] = self.analyze_demographic_bias(demographic_data)
+
+            eer, optimal_threshold = self.calculate_eer()
+            if optimal_threshold:
+                report["fairness_analysis"] = self.analyze_fairness_constraints(
+                    optimal_threshold, demographic_data
+                )
+
+        limitations = self._identify_system_limitations()
+        report["system_limitations"] = limitations
+
+        recommendations = self._generate_bias_recommendations(report)
+        report["recommendations"] = recommendations
+
+        return report
+
+    def _identify_system_limitations(self) -> List[Dict]:
+        """Identifie les limitations du système biométrique"""
+        limitations = []
+
+        genuine_count = len(self.results["genuine"])
+        impostor_count = len(self.results["impostor"])
+
+        if genuine_count < 1000:
+            limitations.append({
+                "type": "sample_size",
+                "severity": "high",
+                "description": f"Échantillon de tests légitimes insuffisant ({genuine_count}). Minimum recommandé: 1000",
+                "impact": "Réduction de la fiabilité des métriques"
+            })
+
+        if impostor_count < 1000:
+            limitations.append({
+                "type": "sample_size",
+                "severity": "high",
+                "description": f"Échantillon de tests imposteurs insuffisant ({impostor_count}). Minimum recommandé: 1000",
+                "impact": "Estimation FAR imprécise"
+            })
+
+        modalities = set()
+        for result in self.results["genuine"] + self.results["impostor"]:
+            modalities.add(result["modality"])
+
+        if len(modalities) < 2:
+            limitations.append({
+                "type": "modality_diversity",
+                "severity": "medium",
+                "description": "Tests limités à une seule modalité biométrique",
+                "impact": "Impossible d'évaluer la fusion multimodale"
+            })
+
+        if self.results["genuine"]:
+            timestamps = [r["timestamp"] for r in self.results["genuine"]]
+            dates = [ts.split("T")[0] for ts in timestamps]
+            unique_dates = len(set(dates))
+
+            if unique_dates < 7:
+                limitations.append({
+                    "type": "temporal_robustness",
+                    "severity": "low",
+                    "description": f"Tests sur seulement {unique_dates} jours. Recommandé: au moins 7 jours",
+                    "impact": "Robustesse temporelle non validée"
+                })
+
+        return limitations
+
+    def _generate_bias_recommendations(self, bias_report: Dict) -> List[str]:
+        """Génère des recommandations basées sur l'analyse des biais"""
+        recommendations = []
+
+        if "bias_analysis" in bias_report and bias_report["bias_analysis"].get("bias_indicators"):
+            bias_indicators = bias_report["bias_analysis"]["bias_indicators"]
+            severe_biases = [b for b in bias_indicators if b["severity"] == "high"]
+
+            if severe_biases:
+                recommendations.extend([
+                    "URGENT: Corriger les biais démographiques critiques avant déploiement",
+                    "Augmenter la diversité des données d'entraînement",
+                    "Implémenter des algorithmes d'équité (fairness-aware)"
+                ])
+            else:
+                recommendations.extend([
+                    "Surveiller l'évolution des biais démographiques",
+                    "Planifier des audits réguliers d'équité"
+                ])
+
+        if "system_limitations" in bias_report:
+            limitations = bias_report["system_limitations"]
+            high_severity = [l for l in limitations if l["severity"] == "high"]
+
+            if high_severity:
+                recommendations.extend([
+                    "Augmenter la taille des jeux de test",
+                    "Diversifier les scénarios de test",
+                    "Valider sur des données réelles avant déploiement"
+                ])
+
+        recommendations.extend([
+            "Établir un comité d'éthique pour la surveillance continue",
+            "Documenter et communiquer la transparence algorithmique",
+            "Fournir des alternatives non-biométriques pour les groupes défavorisés",
+            "Mettre en place un mécanisme de plainte pour les erreurs de reconnaissance"
+        ])
+
+        return list(set(recommendations))
+
     def clear_results(self):
         """Efface les résultats (pour tests)"""
         self.results = {"genuine": [], "impostor": []}

@@ -202,7 +202,7 @@ class BioIDGenerator:
         
         return best_match
     
-    def verify_identity(self, bio_id, face_encoding=None, fingerprint_features=None):
+    def verify_identity(self, bio_id, face_encoding=None, fingerprint_features=None, voice_features=None):
         """
         Vérifie l'identité d'un bénéficiaire
         
@@ -210,6 +210,7 @@ class BioIDGenerator:
             bio_id: Identifiant à vérifier
             face_encoding: Encodage facial capturé
             fingerprint_features: Caractéristiques empreinte capturées
+            voice_features: Caractéristiques vocales capturées
             
         Returns:
             dict: Résultat de la vérification
@@ -229,12 +230,15 @@ class BioIDGenerator:
             "name": beneficiary["name"],
             "face_match": None,
             "fingerprint_match": None,
+            "voice_match": None,
             "face_confidence": 0,
-            "fingerprint_confidence": 0
+            "fingerprint_confidence": 0,
+            "voice_confidence": 0
         }
         
         has_face_data = False
         has_fingerprint_data = False
+        has_voice_data = False
         
         # Vérification faciale
         if face_encoding is not None and beneficiary["face_encoding"] is not None:
@@ -285,21 +289,55 @@ class BioIDGenerator:
             
             print(f"[DEBUG] Fingerprint distance: {fp_distance:.4f}, cosine: {cosine_similarity:.4f}, threshold: {fingerprint_distance_threshold}, match: {result['fingerprint_match']}")
         
+        # Vérification vocale
+        stored_voice = beneficiary.get('metadata', {}).get('voice_features') if beneficiary.get('metadata') else None
+        if voice_features is not None and stored_voice is not None:
+            has_voice_data = True
+            stored_voice_arr = np.array(stored_voice)
+            voice_feat = np.array(voice_features)
+            
+            # Distance euclidienne pour vecteurs MFCC
+            voice_distance = np.linalg.norm(voice_feat - stored_voice_arr)
+            
+            # Seuil pour MFCC (124 dimensions) - plus élevé que pour face/fingerprint
+            voice_threshold = 2.0
+            result["voice_match"] = bool(voice_distance <= voice_threshold)
+            result["voice_distance"] = float(voice_distance)
+            result["voice_confidence"] = float(max(0, min(100, (1 - voice_distance / voice_threshold) * 100)))
+            
+            print(f"[DEBUG] Voice distance: {voice_distance:.4f}, threshold: {voice_threshold}, match: {result['voice_match']}")
+        
         # Vérification globale
-        # Si les deux données sont fournies, LES DEUX doivent correspondre
-        # Si une seule donnée est fournie, elle doit correspondre
-        if has_face_data and has_fingerprint_data:
-            # Les deux données fournies - LES DEUX doivent matcher (sécurité renforcée)
-            result["verified"] = bool(result["face_match"] and result["fingerprint_match"])
-        elif has_face_data:
-            result["verified"] = bool(result["face_match"])
-        elif has_fingerprint_data:
-            result["verified"] = bool(result["fingerprint_match"])
+        # Toutes les modalités fournies doivent correspondre
+        modalities_provided = []
+        modalities_matched = []
+        
+        if has_face_data:
+            modalities_provided.append('face')
+            if result["face_match"]:
+                modalities_matched.append('face')
+        
+        if has_fingerprint_data:
+            modalities_provided.append('fingerprint')
+            if result["fingerprint_match"]:
+                modalities_matched.append('fingerprint')
+        
+        if has_voice_data:
+            modalities_provided.append('voice')
+            if result["voice_match"]:
+                modalities_matched.append('voice')
+        
+        if modalities_provided:
+            # Toutes les modalités fournies doivent matcher
+            result["verified"] = len(modalities_matched) == len(modalities_provided)
+            result["modalities_tested"] = modalities_provided
+            result["modalities_matched"] = modalities_matched
         else:
             result["error"] = "Aucune donnée biométrique fournie pour la vérification"
         
-        print(f"[DEBUG] FINAL RESULT: verified={result['verified']}, face_match={result['face_match']}, fp_match={result['fingerprint_match']}")
-        print(f"[DEBUG] has_face={has_face_data}, has_fp={has_fingerprint_data}")
+        print(f"[DEBUG] FINAL RESULT: verified={result['verified']}, face_match={result['face_match']}, fp_match={result['fingerprint_match']}, voice_match={result['voice_match']}")
+        print(f"[DEBUG] has_face={has_face_data}, has_fp={has_fingerprint_data}, has_voice={has_voice_data}")
+        print(f"[DEBUG] modalities_tested={modalities_provided}, modalities_matched={modalities_matched}")
         
         return result
     

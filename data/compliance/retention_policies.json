@@ -1,0 +1,20 @@
+{
+  "beneficiaries": {
+    "retention_days": 1825,
+    "legal_basis": "consent",
+    "purpose": "Distribution d'aide sociale",
+    "last_review": "2026-01-03T20:03:49.821818"
+  },
+  "audit_logs": {
+    "retention_days": 2555,
+    "legal_basis": "legitimate_interest",
+    "purpose": "Audit et s\u00e9curit\u00e9",
+    "last_review": "2026-01-03T20:03:49.821840"
+  },
+  "metrics": {
+    "retention_days": 365,
+    "legal_basis": "legitimate_interest",
+    "purpose": "Am\u00e9lioration du syst\u00e8me",
+    "last_review": "2026-01-03T20:03:49.821847"
+  }
+}

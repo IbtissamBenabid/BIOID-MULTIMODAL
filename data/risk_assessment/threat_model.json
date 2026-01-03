@@ -1,0 +1,81 @@
+{
+  "system_components": [
+    "Webcam capture",
+    "Fingerprint scanner",
+    "Microphone input",
+    "Face recognition engine",
+    "Fingerprint processor",
+    "Voice analyzer",
+    "Database storage",
+    "API endpoints",
+    "Frontend interface"
+  ],
+  "threat_actors": [
+    {
+      "actor": "Malicious beneficiary",
+      "motivation": "Fraudulent aid collection",
+      "capabilities": "Basic spoofing attempts",
+      "likelihood": "high"
+    },
+    {
+      "actor": "Organized crime",
+      "motivation": "Large-scale fraud",
+      "capabilities": "Advanced spoofing, template attacks",
+      "likelihood": "medium"
+    },
+    {
+      "actor": "Insider threat",
+      "motivation": "Data theft, sabotage",
+      "capabilities": "System access, database manipulation",
+      "likelihood": "low"
+    },
+    {
+      "actor": "State actor",
+      "motivation": "Surveillance, data collection",
+      "capabilities": "Advanced attacks, supply chain compromise",
+      "likelihood": "low"
+    }
+  ],
+  "attack_vectors": {
+    "face_spoofing": {
+      "description": "Photo/video replay, 3D masks, makeup",
+      "detected_by": [
+        "Liveness detection",
+        "Multi-angle capture"
+      ],
+      "mitigation_level": "medium"
+    },
+    "fingerprint_spoofing": {
+      "description": "Gelatin fingerprints, lifted prints",
+      "detected_by": [
+        "Pore analysis",
+        "Temperature sensing"
+      ],
+      "mitigation_level": "high"
+    },
+    "voice_spoofing": {
+      "description": "Audio replay, voice synthesis",
+      "detected_by": [
+        "Liveness detection",
+        "Multi-factor verification"
+      ],
+      "mitigation_level": "medium"
+    },
+    "template_attack": {
+      "description": "Stolen encrypted templates",
+      "detected_by": [
+        "Template encryption",
+        "Regular rotation"
+      ],
+      "mitigation_level": "high"
+    },
+    "database_attack": {
+      "description": "SQL injection, data breach",
+      "detected_by": [
+        "Input validation",
+        "Encryption at rest"
+      ],
+      "mitigation_level": "high"
+    }
+  }
+}
