@@ -574,7 +574,23 @@ def verify_identity():
         # Vérifier
         result = id_generator.verify_identity(bio_id, face_enc, fp_feat)
         
-        # TODO: Ajouter vérification vocale si disponible
+        # Vérification vocale si disponible
+        if voice_feat is not None and VOICE_AVAILABLE:
+            beneficiary = id_generator.get_beneficiary(bio_id)
+            if beneficiary and beneficiary.get('metadata', {}).get('voice_features'):
+                stored_voice = np.array(beneficiary['metadata']['voice_features'])
+                voice_match, voice_distance = compare_voices(voice_feat, stored_voice, threshold=0.4)
+                
+                # Ajouter au résultat
+                result['voice_match'] = bool(voice_match)
+                result['voice_distance'] = float(voice_distance)
+                result['voice_confidence'] = float(max(0, (1 - voice_distance) * 100))
+                
+                # Mettre à jour le résultat global
+                # Si la voix ne match pas, c'est un échec même si les autres modalités matchent
+                if not voice_match and result.get('verified'):
+                    result['verified'] = False
+                    result['error'] = "Voix non reconnue"
         
         # Enregistrer pour métriques (si mode test)
         if data.get('record_metrics'):

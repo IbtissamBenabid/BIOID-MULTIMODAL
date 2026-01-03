@@ -233,6 +233,61 @@
       "details": {
         "ip": "127.0.0.1"
       }
+    },
+    {
+      "event_id": "4724968dbcd62888",
+      "timestamp": "2026-01-03T16:03:01.521047",
+      "event_type": "login",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "ip": "127.0.0.1",
+        "role": "admin"
+      }
+    },
+    {
+      "event_id": "0cbb29f08daab9ae",
+      "timestamp": "2026-01-03T16:03:01.851882",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "4d69bf4099ee7e99",
+      "timestamp": "2026-01-03T16:04:30.918644",
+      "event_type": "enrollment",
+      "actor": "admin",
+      "bio_id": "BIO-B2C22F4E-A7FE",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "modalities": [
+          "face",
+          "fingerprint"
+        ]
+      }
+    },
+    {
+      "event_id": "9c8daa1ba791f8bd",
+      "timestamp": "2026-01-03T16:05:34.033274",
+      "event_type": "verification",
+      "actor": "system",
+      "bio_id": "BIO-B2C22F4E-A7FE",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "confidence": {
+          "face": 70.96992851468417,
+          "fingerprint": 100.0
+        }
+      }
     }
   ]
 }

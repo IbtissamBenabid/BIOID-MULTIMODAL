@@ -216,6 +216,25 @@
                             </p>
                         </div>
                         
+                        <!-- Capture vocale -->
+                        <div class="verify-card">
+                            <h5><i class="bi bi-mic me-2"></i>Vérification Vocale</h5>
+                            <p class="small text-muted mb-2">Dites: "Je confirme mon identité"</p>
+                            <div class="text-center">
+                                <button class="btn btn-outline-primary btn-sm me-2" id="start-voice-record" onclick="startVoiceRecording()">
+                                    <i class="bi bi-mic me-1"></i>Enregistrer
+                                </button>
+                                <button class="btn btn-danger btn-sm" id="stop-voice-record" onclick="stopVoiceRecording()" style="display: none;">
+                                    <i class="bi bi-stop-circle me-1"></i>Stop (<span id="voice-time">0</span>s)
+                                </button>
+                            </div>
+                            <canvas id="voice-canvas" width="250" height="40" style="display: none; margin-top: 10px; border-radius: 5px; background: #f0f0f0;"></canvas>
+                            <audio id="voice-playback" controls style="display: none; width: 100%; margin-top: 10px;"></audio>
+                            <p class="text-muted small mt-2" id="voice-status">
+                                <i class="bi bi-info-circle me-1"></i>Aucun enregistrement
+                            </p>
+                        </div>
+                        
                         <!-- Bouton de vérification -->
                         <div class="text-center">
                             <button class="verify-btn" onclick="verifyIdentity()">
@@ -249,12 +268,19 @@
                                         </div>
                                         <small id="face-confidence-text">-</small>
                                     </div>
-                                    <div>
+                                    <div class="mb-3">
                                         <small>Confiance Empreinte</small>
                                         <div class="confidence-bar">
                                             <div class="confidence-fill" id="fp-confidence" style="width: 0%"></div>
                                         </div>
                                         <small id="fp-confidence-text">-</small>
+                                    </div>
+                                    <div>
+                                        <small>Confiance Vocale</small>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill" id="voice-confidence" style="width: 0%"></div>
+                                        </div>
+                                        <small id="voice-confidence-text">-</small>
                                     </div>
                                 </div>
                             </div>
@@ -280,6 +306,14 @@
         let stream = null;
         let currentFaceEncoding = null;
         let currentFingerprintFeatures = null;
+        let currentVoiceFeatures = null;
+        
+        // Variables pour l'enregistrement vocal
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioStream = null;
+        let voiceTimer = null;
+        let voiceSeconds = 0;
         
         // Charger la liste des bénéficiaires
         async function loadBeneficiaries() {
@@ -404,6 +438,115 @@
             }
         }
         
+        // ============ CAPTURE VOCALE ============
+        async function startVoiceRecording() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                const options = { mimeType: 'audio/webm' };
+                mediaRecorder = new MediaRecorder(audioStream, options);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('voice-playback').src = audioUrl;
+                    document.getElementById('voice-playback').style.display = 'block';
+                    await processVoice(audioBlob);
+                };
+                
+                mediaRecorder.start(100);
+                voiceSeconds = 0;
+                
+                document.getElementById('start-voice-record').style.display = 'none';
+                document.getElementById('stop-voice-record').style.display = 'inline-block';
+                document.getElementById('voice-canvas').style.display = 'block';
+                document.getElementById('voice-status').innerHTML = '<i class="bi bi-mic-fill text-danger me-1"></i>Enregistrement...';
+                
+                // Visualisation simple
+                setupVoiceVisualizer(audioStream);
+                
+                voiceTimer = setInterval(() => {
+                    voiceSeconds++;
+                    document.getElementById('voice-time').textContent = voiceSeconds;
+                    if (voiceSeconds >= 4) stopVoiceRecording();
+                }, 1000);
+                
+            } catch (err) {
+                alert('Erreur microphone: ' + err.message);
+            }
+        }
+        
+        function stopVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+            if (voiceTimer) clearInterval(voiceTimer);
+            
+            document.getElementById('start-voice-record').style.display = 'inline-block';
+            document.getElementById('stop-voice-record').style.display = 'none';
+            document.getElementById('voice-canvas').style.display = 'none';
+            document.getElementById('voice-status').innerHTML = '<i class="bi bi-hourglass-split text-warning me-1"></i>Traitement...';
+        }
+        
+        function setupVoiceVisualizer(stream) {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 128;
+            
+            const canvas = document.getElementById('voice-canvas');
+            const canvasCtx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            function draw() {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.fillStyle = '#f0f0f0';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    canvasCtx.fillStyle = `rgb(102, 126, ${234 - barHeight})`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+        
+        async function processVoice(audioBlob) {
+            const formData = new FormData();
+            formData.append('voice', audioBlob, 'recording.webm');
+            
+            try {
+                const response = await fetch('/api/process_voice', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    currentVoiceFeatures = data.data.features;
+                    document.getElementById('voice-status').innerHTML = 
+                        `<i class="bi bi-check-circle text-success me-1"></i>${data.data.dimensions} caractéristiques`;
+                } else {
+                    document.getElementById('voice-status').innerHTML = 
+                        '<i class="bi bi-x-circle text-danger me-1"></i>' + (data.error || 'Erreur');
+                }
+            } catch (err) {
+                document.getElementById('voice-status').innerHTML = 
+                    '<i class="bi bi-x-circle text-danger me-1"></i>Erreur traitement';
+            }
+        }
+        
         // Vérifier l'identité
         async function verifyIdentity() {
             const bioId = document.getElementById('bio-id-input').value.trim();
@@ -413,7 +556,7 @@
                 return;
             }
             
-            if (!currentFaceEncoding && !currentFingerprintFeatures) {
+            if (!currentFaceEncoding && !currentFingerprintFeatures && !currentVoiceFeatures) {
                 alert('Veuillez capturer au moins une donnée biométrique');
                 return;
             }
@@ -425,7 +568,8 @@
                     body: JSON.stringify({
                         bio_id: bioId,
                         face_encoding: currentFaceEncoding,
-                        fingerprint_features: currentFingerprintFeatures
+                        fingerprint_features: currentFingerprintFeatures,
+                        voice_features: currentVoiceFeatures
                     })
                 });
                 
@@ -447,6 +591,7 @@
                     // Barres de confiance
                     const faceConf = data.result.face_confidence || 0;
                     const fpConf = data.result.fingerprint_confidence || 0;
+                    const voiceConf = data.result.voice_confidence || 0;
                     
                     document.getElementById('face-confidence').style.width = faceConf + '%';
                     document.getElementById('face-confidence-text').textContent = 
@@ -455,6 +600,10 @@
                     document.getElementById('fp-confidence').style.width = fpConf + '%';
                     document.getElementById('fp-confidence-text').textContent = 
                         fpConf > 0 ? fpConf.toFixed(1) + '%' : 'Non testé';
+                    
+                    document.getElementById('voice-confidence').style.width = voiceConf + '%';
+                    document.getElementById('voice-confidence-text').textContent = 
+                        voiceConf > 0 ? voiceConf.toFixed(1) + '%' : 'Non testé';
                 } else {
                     // Échec
                     document.getElementById('result-success').style.display = 'none';

@@ -280,6 +280,47 @@
                     </div>
                 </div>
                 
+                <!-- Étape 4: Capture Vocale -->
+                <div class="step-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="step-number">4</div>
+                            <h5 class="mb-0">Empreinte Vocale</h5>
+                        </div>
+                        <span class="status-badge status-pending" id="voice-status">
+                            <i class="bi bi-clock me-1"></i>En attente
+                        </span>
+                    </div>
+                    
+                    <div class="text-center mb-3">
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Lisez la phrase suivante à voix haute pendant l'enregistrement:
+                        </p>
+                        <div class="p-3 bg-light rounded mb-3">
+                            <strong id="voice-phrase">"Je confirme mon identité pour le système BioID"</strong>
+                        </div>
+                        
+                        <button class="btn btn-outline-primary me-2" id="start-recording" onclick="startVoiceRecording()">
+                            <i class="bi bi-mic me-1"></i>Démarrer l'enregistrement
+                        </button>
+                        <button class="btn btn-danger" id="stop-recording" onclick="stopVoiceRecording()" style="display: none;">
+                            <i class="bi bi-stop-circle me-1"></i>Arrêter (<span id="recording-time">0</span>s)
+                        </button>
+                        
+                        <div class="mt-3" id="voice-visualizer" style="display: none;">
+                            <canvas id="audio-canvas" width="400" height="60" style="border-radius: 10px; background: #f0f0f0;"></canvas>
+                        </div>
+                        
+                        <audio id="voice-playback" controls class="mt-3" style="display: none;"></audio>
+                    </div>
+                    
+                    <p class="text-muted small">
+                        <i class="bi bi-shield-check me-1"></i>
+                        L'empreinte vocale ajoute une couche de sécurité supplémentaire (optionnel)
+                    </p>
+                </div>
+                
                 <!-- Bouton d'enregistrement -->
                 <div class="text-center mb-4">
                     <button class="btn btn-lg capture-btn" id="register-btn" onclick="registerBeneficiary()" disabled>
@@ -311,8 +352,18 @@
         let stream = null;
         let faceEncodings = [];
         let fingerprintFeatures = null;
+        let voiceFeatures = null;
         let captureCount = 0;
         const MAX_CAPTURES = 10;
+        
+        // Variables pour l'enregistrement vocal
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioStream = null;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+        let audioContext = null;
+        let analyser = null;
         
         // Démarrer la caméra
         async function startCamera() {
@@ -463,15 +514,168 @@
             badge.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'clock'} me-1"></i>${text}`;
         }
         
+        function updateVoiceStatus(type, text) {
+            const badge = document.getElementById('voice-status');
+            badge.className = `status-badge status-${type}`;
+            badge.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'recording' ? 'mic-fill' : 'clock'} me-1"></i>${text}`;
+        }
+        
+        // ============ CAPTURE VOCALE ============
+        async function startVoiceRecording() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Configuration MediaRecorder
+                const options = { mimeType: 'audio/webm' };
+                mediaRecorder = new MediaRecorder(audioStream, options);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Playback
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('voice-playback').src = audioUrl;
+                    document.getElementById('voice-playback').style.display = 'block';
+                    
+                    // Envoyer au serveur
+                    await processVoiceRecording(audioBlob);
+                };
+                
+                // Visualisation audio
+                setupAudioVisualizer(audioStream);
+                
+                // Démarrer l'enregistrement
+                mediaRecorder.start(100);
+                recordingSeconds = 0;
+                
+                document.getElementById('start-recording').style.display = 'none';
+                document.getElementById('stop-recording').style.display = 'inline-block';
+                document.getElementById('voice-visualizer').style.display = 'block';
+                
+                updateVoiceStatus('recording', 'Enregistrement...');
+                
+                // Timer
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    document.getElementById('recording-time').textContent = recordingSeconds;
+                    
+                    // Auto-stop après 5 secondes
+                    if (recordingSeconds >= 5) {
+                        stopVoiceRecording();
+                    }
+                }, 1000);
+                
+            } catch (err) {
+                alert('Erreur accès microphone: ' + err.message);
+                updateVoiceStatus('error', 'Micro non disponible');
+            }
+        }
+        
+        function stopVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
+            
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+            }
+            
+            document.getElementById('start-recording').style.display = 'inline-block';
+            document.getElementById('stop-recording').style.display = 'none';
+            document.getElementById('voice-visualizer').style.display = 'none';
+            
+            updateVoiceStatus('pending', 'Traitement...');
+        }
+        
+        function setupAudioVisualizer(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            const canvas = document.getElementById('audio-canvas');
+            const canvasCtx = canvas.getContext('2d');
+            
+            function draw() {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+                
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                
+                canvasCtx.fillStyle = '#f0f0f0';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    
+                    canvasCtx.fillStyle = `rgb(102, 126, ${234 - barHeight})`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    
+                    x += barWidth + 1;
+                }
+            }
+            
+            draw();
+        }
+        
+        async function processVoiceRecording(audioBlob) {
+            const formData = new FormData();
+            formData.append('voice', audioBlob, 'recording.webm');
+            
+            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
+            
+            try {
+                const response = await fetch('/api/process_voice', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    voiceFeatures = data.data.features;
+                    updateVoiceStatus('success', `${data.data.dimensions} caractéristiques`);
+                    checkCanRegister();
+                } else {
+                    updateVoiceStatus('error', data.error || 'Erreur traitement vocal');
+                }
+            } catch (err) {
+                updateVoiceStatus('error', err.message);
+            }
+        }
+        
         // Vérifier si on peut enregistrer
         function checkCanRegister() {
             const name = document.getElementById('beneficiary-name').value.trim();
             const hasFace = faceEncodings.length >= MAX_CAPTURES;
             const hasFingerprint = fingerprintFeatures !== null;
+            const hasVoice = voiceFeatures !== null;
             const hasConsent = document.getElementById('consent-checkbox').checked && 
                               document.getElementById('consent-storage').checked;
             
-            document.getElementById('register-btn').disabled = !(name && (hasFace || hasFingerprint) && hasConsent);
+            // Au moins une modalité biométrique requise
+            document.getElementById('register-btn').disabled = !(name && (hasFace || hasFingerprint || hasVoice) && hasConsent);
         }
         
         document.getElementById('beneficiary-name').addEventListener('input', checkCanRegister);
@@ -508,8 +712,8 @@
             }
             
             // Vérifier qu'on a au moins une donnée biométrique valide
-            if (!avgFaceEncoding && !fingerprintFeatures) {
-                alert('Veuillez capturer au moins un visage ou une empreinte digitale');
+            if (!avgFaceEncoding && !fingerprintFeatures && !voiceFeatures) {
+                alert('Veuillez capturer au moins une donnée biométrique (visage, empreinte ou voix)');
                 return;
             }
             
@@ -527,6 +731,7 @@
                         name: name,
                         face_encoding: avgFaceEncoding,
                         fingerprint_features: fingerprintFeatures,
+                        voice_features: voiceFeatures,
                         consent: {
                             consent_given: consentGiven,
                             consent_storage: consentStorage,
