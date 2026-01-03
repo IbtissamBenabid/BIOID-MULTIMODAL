@@ -288,6 +288,136 @@
           "fingerprint": 100.0
         }
       }
+    },
+    {
+      "event_id": "b1d2e9125c2c32a6",
+      "timestamp": "2026-01-03T16:12:37.305063",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "18aa3adf5377f17d",
+      "timestamp": "2026-01-03T16:12:47.431943",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "e47198f694fd6bac",
+      "timestamp": "2026-01-03T16:13:37.434355",
+      "event_type": "verification",
+      "actor": "system",
+      "bio_id": "BIO-B2C22F4E-A7FE",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "confidence": {
+          "face": 76.26622604264992,
+          "fingerprint": 100.0
+        }
+      }
+    },
+    {
+      "event_id": "9f32f728852103a8",
+      "timestamp": "2026-01-03T16:16:22.067131",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "9e027a131db70390",
+      "timestamp": "2026-01-03T16:16:29.025120",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "d37c233f58d5e125",
+      "timestamp": "2026-01-03T16:18:44.216739",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "e8a9fec2aa85c636",
+      "timestamp": "2026-01-03T16:19:39.795573",
+      "event_type": "enrollment",
+      "actor": "admin",
+      "bio_id": "BIO-71596EBA-7D0B",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "modalities": [
+          "face",
+          "fingerprint",
+          "voice"
+        ]
+      }
+    },
+    {
+      "event_id": "4301d220f530ab67",
+      "timestamp": "2026-01-03T16:19:49.315297",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "9d5f681fbfba9e76",
+      "timestamp": "2026-01-03T16:22:26.090417",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "266b176d7946565f",
+      "timestamp": "2026-01-03T16:22:56.449793",
+      "event_type": "verification",
+      "actor": "system",
+      "bio_id": "BIO-71596EBA-7D0B",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "confidence": {
+          "face": 72.30637899539954,
+          "fingerprint": 100.0
+        }
+      }
     }
   ]
 }

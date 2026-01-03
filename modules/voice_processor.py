@@ -83,18 +83,22 @@ class VoiceProcessor:
         if not VOICE_AVAILABLE:
             raise RuntimeError("Modules audio non disponibles")
         
-        import io
         import tempfile
         
         # Sauvegarder temporairement pour librosa
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
-            tmp.write(audio_bytes)
-            tmp_path = tmp.name
+        tmp_path = tempfile.mktemp(suffix='.wav')
         
         try:
+            with open(tmp_path, 'wb') as tmp:
+                tmp.write(audio_bytes)
+            
             self.audio_data, sr = librosa.load(tmp_path, sr=self.sample_rate)
         finally:
-            os.unlink(tmp_path)
+            # Supprimer le fichier temporaire après fermeture
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
         
         return self.audio_data
     

@@ -26,9 +26,19 @@ from config import FACES_DIR, FINGERPRINTS_DIR, DATABASE_FILE
 
 # Import optionnel voix
 try:
-    from modules.voice_processor import VoiceProcessor, compare_voices, VOICE_AVAILABLE
+    from modules.voice_processor import VoiceProcessor, VOICE_AVAILABLE
+    # Définir compare_voices localement pour éviter les problèmes d'import
+    def compare_voices(features1, features2, threshold=0.3):
+        """Compare deux empreintes vocales"""
+        if features1 is None or features2 is None:
+            return False, 1.0
+        distance = np.linalg.norm(np.array(features1) - np.array(features2))
+        match = distance <= threshold
+        return match, float(distance)
 except ImportError:
     VOICE_AVAILABLE = False
+    def compare_voices(f1, f2, threshold=0.3):
+        return False, 1.0
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
@@ -443,7 +453,7 @@ def process_fingerprint():
 @app.route('/api/process_voice', methods=['POST'])
 @require_auth
 def process_voice():
-    """Traite un enregistrement vocal"""
+    """Traite un enregistrement vocal (format WAV)"""
     if not VOICE_AVAILABLE:
         return api_response(False, error="Module vocal non disponible", status_code=501)
     
@@ -454,6 +464,7 @@ def process_voice():
         file = request.files['voice']
         audio_bytes = file.read()
         
+        # Le frontend envoie maintenant du WAV directement
         processor = VoiceProcessor()
         processor.load_from_bytes(audio_bytes)
         processor.preprocess()
@@ -466,6 +477,8 @@ def process_voice():
         })
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return api_response(False, error=str(e), status_code=500)
 
 
@@ -579,7 +592,9 @@ def verify_identity():
             beneficiary = id_generator.get_beneficiary(bio_id)
             if beneficiary and beneficiary.get('metadata', {}).get('voice_features'):
                 stored_voice = np.array(beneficiary['metadata']['voice_features'])
-                voice_match, voice_distance = compare_voices(voice_feat, stored_voice, threshold=0.4)
+                # Seuil plus élevé pour les vecteurs MFCC (124 dimensions)
+                voice_match, voice_distance = compare_voices(voice_feat, stored_voice, threshold=2.0)
+                print(f"[DEBUG] Voice distance: {voice_distance:.4f}, threshold: 2.0, match: {voice_match}")
                 
                 # Ajouter au résultat
                 result['voice_match'] = bool(voice_match)

@@ -441,34 +441,47 @@
         // ============ CAPTURE VOCALE ============
         async function startVoiceRecording() {
             try {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    } 
+                });
                 
-                const options = { mimeType: 'audio/webm' };
-                mediaRecorder = new MediaRecorder(audioStream, options);
+                // Utiliser Web Audio API pour enregistrer en PCM
+                window.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                const source = window.audioContext.createMediaStreamSource(audioStream);
+                
+                // ScriptProcessor pour capturer les données PCM
+                const bufferSize = 4096;
+                const scriptProcessor = window.audioContext.createScriptProcessor(bufferSize, 1, 1);
                 audioChunks = [];
                 
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) audioChunks.push(event.data);
+                scriptProcessor.onaudioprocess = (event) => {
+                    const channel = event.inputBuffer.getChannelData(0);
+                    audioChunks.push(new Float32Array(channel));
                 };
                 
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    document.getElementById('voice-playback').src = audioUrl;
-                    document.getElementById('voice-playback').style.display = 'block';
-                    await processVoice(audioBlob);
-                };
+                source.connect(scriptProcessor);
+                scriptProcessor.connect(window.audioContext.destination);
                 
-                mediaRecorder.start(100);
+                window.scriptProcessor = scriptProcessor;
+                window.audioSource = source;
+                
+                // Visualisation
+                const analyser = window.audioContext.createAnalyser();
+                source.connect(analyser);
+                window.voiceAnalyser = analyser;
+                drawVoiceVisualizer();
+                
                 voiceSeconds = 0;
                 
                 document.getElementById('start-voice-record').style.display = 'none';
                 document.getElementById('stop-voice-record').style.display = 'inline-block';
                 document.getElementById('voice-canvas').style.display = 'block';
                 document.getElementById('voice-status').innerHTML = '<i class="bi bi-mic-fill text-danger me-1"></i>Enregistrement...';
-                
-                // Visualisation simple
-                setupVoiceVisualizer(audioStream);
                 
                 voiceTimer = setInterval(() => {
                     voiceSeconds++;
@@ -482,7 +495,8 @@
         }
         
         function stopVoiceRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (window.scriptProcessor) window.scriptProcessor.disconnect();
+            if (window.audioSource) window.audioSource.disconnect();
             if (audioStream) audioStream.getTracks().forEach(t => t.stop());
             if (voiceTimer) clearInterval(voiceTimer);
             
@@ -490,24 +504,76 @@
             document.getElementById('stop-voice-record').style.display = 'none';
             document.getElementById('voice-canvas').style.display = 'none';
             document.getElementById('voice-status').innerHTML = '<i class="bi bi-hourglass-split text-warning me-1"></i>Traitement...';
+            
+            // Convertir en WAV et traiter
+            if (audioChunks.length > 0) {
+                const wavBlob = createWavBlob(audioChunks, window.audioContext.sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                document.getElementById('voice-playback').src = audioUrl;
+                document.getElementById('voice-playback').style.display = 'block';
+                processVoice(wavBlob);
+            }
         }
         
-        function setupVoiceVisualizer(stream) {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaStreamSource(stream);
-            source.connect(analyser);
-            analyser.fftSize = 128;
+        // Fonction pour créer un fichier WAV à partir des données PCM
+        function createWavBlob(chunks, sampleRate) {
+            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+            const audioData = new Float32Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunks) {
+                audioData.set(chunk, offset);
+                offset += chunk.length;
+            }
+            
+            const numChannels = 1;
+            const bytesPerSample = 2;
+            const dataLength = audioData.length * bytesPerSample;
+            
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+            
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+            view.setUint16(32, numChannels * bytesPerSample, true);
+            view.setUint16(34, bytesPerSample * 8, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataLength, true);
+            
+            let pos = 44;
+            for (let i = 0; i < audioData.length; i++) {
+                const sample = Math.max(-1, Math.min(1, audioData[i]));
+                view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                pos += 2;
+            }
+            
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+        
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+        
+        function drawVoiceVisualizer() {
+            if (!window.voiceAnalyser) return;
             
             const canvas = document.getElementById('voice-canvas');
             const canvasCtx = canvas.getContext('2d');
-            const bufferLength = analyser.frequencyBinCount;
+            const bufferLength = window.voiceAnalyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
             
             function draw() {
-                if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+                if (!audioStream || !audioStream.active) return;
                 requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
+                window.voiceAnalyser.getByteFrequencyData(dataArray);
                 canvasCtx.fillStyle = '#f0f0f0';
                 canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
                 const barWidth = (canvas.width / bufferLength) * 2;
@@ -524,7 +590,7 @@
         
         async function processVoice(audioBlob) {
             const formData = new FormData();
-            formData.append('voice', audioBlob, 'recording.webm');
+            formData.append('voice', audioBlob, 'recording.wav');
             
             try {
                 const response = await fetch('/api/process_voice', {

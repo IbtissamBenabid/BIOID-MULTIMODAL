@@ -145,6 +145,11 @@ class BioIDGenerator:
                 return beneficiary
         return None
     
+    # Alias pour compatibilité
+    def get_beneficiary(self, bio_id):
+        """Alias pour find_by_id"""
+        return self.find_by_id(bio_id)
+    
     def find_by_biometrics(self, face_encoding, fingerprint_features, 
                            face_threshold=0.6, fingerprint_threshold=0.6):
         """
