@@ -10,26 +10,132 @@ import os
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+# Use project data directory when available (works with Docker mounts)
+try:
+    from config import DATA_DIR
+except Exception:
+    DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+
 
 class BiometricMetrics:
     """Calcul et analyse des métriques biométriques"""
     
-    def __init__(self, results_file="data/metrics/verification_results.json"):
+    def __init__(self, results_file=None):
         """
         Args:
             results_file: Fichier de stockage des résultats
         """
+        # Default to project's data directory so metrics read Docker-mounted data
+        if results_file is None:
+            results_file = os.path.join(DATA_DIR, "metrics", "verification_results.json")
+
         self.results_file = results_file
         self.results = self._load_results()
     
     def _load_results(self):
         """Charge les résultats de vérification"""
         os.makedirs(os.path.dirname(self.results_file), exist_ok=True)
-        
+
+        # If explicit file exists, load it
         if os.path.exists(self.results_file):
-            with open(self.results_file, 'r') as f:
-                return json.load(f)
+            try:
+                with open(self.results_file, 'r') as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and ("genuine" in data or "impostor" in data):
+                        return data
+            except Exception:
+                # Fall through to attempt ingestion from audit logs
+                pass
+
+        # Try to ingest from audit logs if metrics file not present or invalid
+        ingested = self._ingest_from_audit_logs()
+        if ingested:
+            # Save ingested results for future runs
+            self._save_results()
+            return self.results
+
+        # Fallback: empty structure
         return {"genuine": [], "impostor": []}
+
+    def _ingest_from_audit_logs(self) -> bool:
+        """Ingest verification events from audit logs to populate metrics.
+
+        This scans the project's `data/audit` directory for JSON files containing
+        verification events. It converts event confidences to a score between 0-1
+        compatible with FAR/FRR methods (lower score = better match).
+        """
+        audit_dir = os.path.join(DATA_DIR, "audit")
+        if not os.path.isdir(audit_dir):
+            return False
+
+        any_found = False
+        # ensure results structure
+        self.results = {"genuine": [], "impostor": []}
+
+        for fname in sorted(os.listdir(audit_dir)):
+            if not fname.endswith('.json'):
+                continue
+            path = os.path.join(audit_dir, fname)
+            try:
+                with open(path, 'r') as f:
+                    content = json.load(f)
+            except Exception:
+                continue
+
+            logs = content.get('logs') if isinstance(content, dict) else content
+            if not logs:
+                continue
+
+            for event in logs:
+                try:
+                    if event.get('event_type') != 'verification':
+                        continue
+
+                    timestamp = event.get('timestamp') or datetime.now().isoformat()
+                    success = event.get('success', False)
+                    details = event.get('details', {}) or {}
+                    confidence = details.get('confidence') or {}
+
+                    # confidence is expected to be a dict like {"face": 78.7, "fingerprint": 94.6}
+                    if isinstance(confidence, dict):
+                        for modality, val in confidence.items():
+                            # convert value to numeric score where lower is better
+                            try:
+                                num = float(val)
+                            except Exception:
+                                continue
+
+                            # Heuristics:
+                            # - If confidence > 1, treat as percentage (0-100)
+                            #   convert to normalized confidence [0,1] then to distance-like score
+                            # - If confidence already in [0,1], treat as similarity and convert
+                            if num > 1:
+                                normalized = num / 100.0
+                                score = max(0.0, min(1.0, 1.0 - normalized))
+                            else:
+                                # assume similarity where higher is better -> convert
+                                score = max(0.0, min(1.0, 1.0 - num))
+
+                            record = {
+                                "score": float(score),
+                                "modality": modality,
+                                "timestamp": timestamp
+                            }
+
+                            if success:
+                                self.results['genuine'].append(record)
+                            else:
+                                self.results['impostor'].append(record)
+
+                            any_found = True
+
+                except Exception:
+                    # Skip malformed events
+                    continue
+
+        if any_found:
+            print(f"[metrics] Ingested metrics from audit logs in {audit_dir}")
+        return any_found
     
     def _save_results(self):
         """Sauvegarde les résultats"""
