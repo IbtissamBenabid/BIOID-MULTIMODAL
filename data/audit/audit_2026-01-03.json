@@ -418,6 +418,55 @@
           "fingerprint": 100.0
         }
       }
+    },
+    {
+      "event_id": "099c415f5c3739de",
+      "timestamp": "2026-01-03T16:38:41.623435",
+      "event_type": "login",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "ip": "127.0.0.1",
+        "role": "admin"
+      }
+    },
+    {
+      "event_id": "a92b84cb1d9c2fb6",
+      "timestamp": "2026-01-03T16:38:42.146161",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "c26a64c7c4573900",
+      "timestamp": "2026-01-03T16:39:15.188573",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "7855d258f7e93d38",
+      "timestamp": "2026-01-03T16:39:20.348951",
+      "event_type": "logout",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "ip": "127.0.0.1"
+      }
     }
   ]
 }

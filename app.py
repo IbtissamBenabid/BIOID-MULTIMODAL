@@ -893,6 +893,119 @@ def health_check():
 
 
 # =============================================================================
+# MÉTRIQUES BIOMÉTRIQUES
+# =============================================================================
+
+@app.route('/metrics')
+def metrics_page():
+    """Page des métriques biométriques"""
+    return render_template('metrics.html')
+
+
+@app.route('/api/metrics/report', methods=['GET'])
+@require_auth
+def get_metrics_report():
+    """Génère un rapport complet des métriques"""
+    try:
+        report = metrics.generate_report()
+        return api_response(True, data=report)
+    except Exception as e:
+        return api_response(False, error=str(e), status_code=500)
+
+
+@app.route('/api/metrics/far_frr', methods=['GET'])
+@require_auth
+def get_far_frr():
+    """Calcule FAR/FRR pour un seuil donné"""
+    try:
+        threshold = float(request.args.get('threshold', 0.5))
+        modality = request.args.get('modality')
+        
+        far, frr = metrics.calculate_far_frr(threshold, modality)
+        
+        return api_response(True, data={
+            "threshold": threshold,
+            "modality": modality or "all",
+            "far": far,
+            "frr": frr
+        })
+    except Exception as e:
+        return api_response(False, error=str(e), status_code=500)
+
+
+@app.route('/api/metrics/eer', methods=['GET'])
+@require_auth
+def get_eer():
+    """Calcule l'EER"""
+    try:
+        modality = request.args.get('modality')
+        eer, threshold = metrics.calculate_eer(modality)
+        
+        return api_response(True, data={
+            "modality": modality or "all",
+            "eer": eer,
+            "optimal_threshold": threshold
+        })
+    except Exception as e:
+        return api_response(False, error=str(e), status_code=500)
+
+
+@app.route('/api/metrics/generate_test_data', methods=['POST'])
+@require_auth
+def generate_test_data():
+    """Génère des données de test simulées pour les métriques"""
+    try:
+        # Générer des scores simulés pour démonstration
+        np.random.seed(42)
+        
+        # Scores genuine (distributions centrées sur des valeurs basses)
+        genuine_face_scores = np.random.normal(0.25, 0.08, 50).clip(0, 1)
+        genuine_fp_scores = np.random.normal(0.15, 0.05, 50).clip(0, 1)
+        genuine_voice_scores = np.random.normal(0.8, 0.3, 50).clip(0, 3)
+        
+        # Scores impostor (distributions centrées sur des valeurs hautes)
+        impostor_face_scores = np.random.normal(0.65, 0.12, 50).clip(0, 1)
+        impostor_fp_scores = np.random.normal(0.55, 0.15, 50).clip(0, 1)
+        impostor_voice_scores = np.random.normal(2.5, 0.5, 50).clip(0, 5)
+        
+        # Enregistrer les scores
+        for score in genuine_face_scores:
+            metrics.record_verification(True, score, "face")
+        for score in genuine_fp_scores:
+            metrics.record_verification(True, score, "fingerprint")
+        for score in genuine_voice_scores:
+            metrics.record_verification(True, score, "voice")
+            
+        for score in impostor_face_scores:
+            metrics.record_verification(False, score, "face")
+        for score in impostor_fp_scores:
+            metrics.record_verification(False, score, "fingerprint")
+        for score in impostor_voice_scores:
+            metrics.record_verification(False, score, "voice")
+        
+        return api_response(True, data={
+            "message": "Données de test générées",
+            "genuine_count": 150,
+            "impostor_count": 150
+        })
+    except Exception as e:
+        return api_response(False, error=str(e), status_code=500)
+
+
+@app.route('/api/metrics/reset', methods=['POST'])
+@require_auth
+def reset_metrics():
+    """Réinitialise les données de métriques"""
+    try:
+        metrics.results = {"genuine": [], "impostor": []}
+        metrics._save_results()
+        
+        return api_response(True, data={"message": "Métriques réinitialisées"})
+    except Exception as e:
+        return api_response(False, error=str(e), status_code=500)
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
