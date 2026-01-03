@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+.mypy_cache/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs (pas nécessaires dans l'image)
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+test_*.py
+
+# Logs locaux
+*.log
+logs/
+
+# Fichiers temporaires
+tmp/
+temp/
+*.tmp
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# Environnement
+.env
+.env.*
+*.env
+
+# Données sensibles (seront montées en volume)
+# data/keys/
+# data/security/

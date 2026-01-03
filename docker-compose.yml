@@ -1,0 +1,59 @@
+# BioID - Docker Compose
+# Déploiement simplifié avec tous les services
+
+version: '3.8'
+
+services:
+  bioid:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bioid-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-bioid-jwt-secret-key-2026-production}
+      - DATABASE_URL=${DATABASE_URL:-postgres://avnadmin:AVNS_PrGBoC-fUef_dB6Hakl@pg-39221806-etu-2442.d.aivencloud.com:22238/bioid?sslmode=require}
+    volumes:
+      # Persister les données biométriques
+      - bioid-data:/app/data
+      # Logs
+      - bioid-logs:/app/logs
+    networks:
+      - bioid-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx reverse proxy (optionnel, pour HTTPS)
+  nginx:
+    image: nginx:alpine
+    container_name: bioid-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - bioid
+    networks:
+      - bioid-network
+    profiles:
+      - with-nginx
+
+volumes:
+  bioid-data:
+    driver: local
+  bioid-logs:
+    driver: local
+
+networks:
+  bioid-network:
+    driver: bridge

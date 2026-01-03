@@ -1,0 +1,48 @@
+# BioID - Git Ignore
+
+# Environment variables (SECRETS!)
+
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data (optionnel - décommenter si vous ne voulez pas tracker)
+# data/faces/
+# data/fingerprints/
+# data/keys/
+
+# Docker
+*.tar.gz
+
+# SSL certificates
+ssl/
+*.pem
+*.crt
+*.key

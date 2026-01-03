@@ -7,6 +7,9 @@ wheel
 flask>=3.0.0
 numpy>=1.26.0
 
+# Production Server
+gunicorn>=21.0.0
+
 # Vision & Image Processing
 opencv-python>=4.8.0
 pillow>=10.0.0
