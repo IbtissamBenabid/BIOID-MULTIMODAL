@@ -1,0 +1,26 @@
+{
+  "users": {
+    "admin": {
+      "password_hash": "a95f5ca77b371825ec051413e95e406b7ed3b4de68bce27586bda4e6811457d6",
+      "role": "admin",
+      "created_at": "2026-01-03T15:25:31.774703",
+      "active": true,
+      "must_change_password": true,
+      "last_login": "2026-01-03T15:44:30.790351"
+    },
+    "operator": {
+      "password_hash": "345d67dcdc144816d21574bdfad0f41256ebe5b0ab9566170ee2f1db9adae7bc",
+      "role": "operator",
+      "created_at": "2026-01-03T15:25:31.774716",
+      "active": true,
+      "must_change_password": true
+    },
+    "auditor": {
+      "password_hash": "2936cb0988b7b7be88a440ef043685329971f4230054d3c7ccea0902c2024871",
+      "role": "auditor",
+      "created_at": "2026-01-03T15:25:31.774720",
+      "active": true,
+      "must_change_password": true
+    }
+  }
+}

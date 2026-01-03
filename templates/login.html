@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - BioID</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo i {
+            font-size: 4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .input-group-text {
+            border-radius: 10px 0 0 10px;
+            border: 2px solid #e0e0e0;
+            border-right: none;
+            background: #f8f9fa;
+        }
+        
+        .input-group .form-control {
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            color: white;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 5px;
+        }
+        
+        .role-admin { background: #fee2e2; color: #991b1b; }
+        .role-operator { background: #dbeafe; color: #1e40af; }
+        .role-auditor { background: #fef3c7; color: #92400e; }
+        
+        .demo-credentials {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">
+            <i class="bi bi-fingerprint"></i>
+            <h1>BioID</h1>
+            <p class="text-muted">Système d'Identification Biométrique</p>
+        </div>
+        
+        <div id="alert-container"></div>
+        
+        <form id="login-form">
+            <div class="mb-3">
+                <label class="form-label">Nom d'utilisateur</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" id="username" placeholder="Entrez votre identifiant" required>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Mot de passe</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" id="password" placeholder="Entrez votre mot de passe" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-login">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+            </button>
+        </form>
+        
+        <div class="demo-credentials">
+            <strong><i class="bi bi-info-circle me-1"></i>Comptes de démonstration:</strong>
+            <div class="mt-2">
+                <span class="role-badge role-admin">admin / admin123</span>
+                <span class="role-badge role-operator">operator / op123</span>
+                <span class="role-badge role-auditor">auditor / audit123</span>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                <i class="bi bi-shield-check me-1"></i>
+                Connexion sécurisée - Session de 8 heures
+            </small>
+        </div>
+    </div>
+
+    <script>
+        // Vérifier si déjà connecté
+        const token = localStorage.getItem('bioIdToken');
+        if (token) {
+            window.location.href = '/';
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Stocker le token et les infos utilisateur
+                    localStorage.setItem('bioIdToken', data.data.token);
+                    localStorage.setItem('bioIdUser', JSON.stringify({
+                        username: data.data.username,
+                        role: data.data.role,
+                        permissions: data.data.permissions
+                    }));
+                    
+                    // Aussi stocker dans un cookie pour les pages web
+                    document.cookie = `bioIdToken=${data.data.token}; path=/; max-age=28800`;
+                    
+                    // Rediriger vers l'accueil
+                    window.location.href = '/';
+                } else {
+                    showAlert(data.error || 'Erreur de connexion', 'danger');
+                }
+            } catch (err) {
+                showAlert('Erreur de connexion au serveur', 'danger');
+            }
+        });
+        
+        function showAlert(message, type) {
+            document.getElementById('alert-container').innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

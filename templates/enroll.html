@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrôlement - BioID</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .main-container {
+            padding-top: 100px;
+            padding-bottom: 50px;
+        }
+        
+        .step-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .video-container {
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        
+        #video-feed, #canvas {
+            width: 100%;
+            display: block;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .capture-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+        }
+        
+        .capture-btn:hover {
+            transform: scale(1.05);
+            color: white;
+        }
+        
+        .fingerprint-upload {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .fingerprint-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .fingerprint-upload.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .face-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 3px solid #10b981;
+        }
+        
+        .fingerprint-preview {
+            max-width: 200px;
+            border-radius: 10px;
+            border: 3px solid #10b981;
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .bio-id {
+            font-size: 2rem;
+            font-weight: bold;
+            font-family: monospace;
+            background: rgba(255,255,255,0.2);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-fingerprint me-2" style="color: #667eea;"></i>
+                BioID
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/"><i class="bi bi-house me-1"></i> Accueil</a>
+                <a class="nav-link active" href="/enroll"><i class="bi bi-person-plus me-1"></i> Enrôlement</a>
+                <a class="nav-link" href="/verify"><i class="bi bi-shield-check me-1"></i> Vérification</a>
+                <span class="nav-link text-muted" id="user-info"></span>
+                <button class="btn btn-outline-danger btn-sm ms-2" onclick="logout()">
+                    <i class="bi bi-box-arrow-right me-1"></i>Déconnexion
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h2 class="mb-4 text-center">
+                    <i class="bi bi-person-plus me-2" style="color: #667eea;"></i>
+                    Nouvel Enrôlement
+                </h2>
+                
+                <!-- Étape 1: Informations -->
+                <div class="step-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="step-number">1</div>
+                        <h5 class="mb-0">Informations du Bénéficiaire</h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Nom complet *</label>
+                            <input type="text" class="form-control" id="beneficiary-name" placeholder="Entrez le nom complet">
+                        </div>
+                    </div>
+                    
+                    <!-- Consentement RGPD -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6><i class="bi bi-shield-check me-2 text-success"></i>Consentement (RGPD / Loi 09-08)</h6>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="consent-checkbox">
+                            <label class="form-check-label small" for="consent-checkbox">
+                                J'autorise la collecte et le traitement de mes données biométriques (visage, empreinte) 
+                                à des fins d'identification. Je comprends que ces données seront stockées de manière 
+                                sécurisée et chiffrée, et que je peux demander leur suppression à tout moment.
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="consent-storage">
+                            <label class="form-check-label small" for="consent-storage">
+                                J'accepte le stockage de mes données biométriques pour une durée maximale de 5 ans.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Étape 2: Capture Faciale -->
+                <div class="step-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="step-number">2</div>
+                            <h5 class="mb-0">Capture Faciale</h5>
+                        </div>
+                        <span class="status-badge status-pending" id="face-status">
+                            <i class="bi bi-clock me-1"></i>En attente
+                        </span>
+                    </div>
+                    
+                    <div class="video-container mb-3">
+                        <video id="video-feed" autoplay playsinline></video>
+                        <canvas id="canvas"></canvas>
+                    </div>
+                    
+                    <div class="text-center mb-3">
+                        <button class="capture-btn" id="start-camera" onclick="startCamera()">
+                            <i class="bi bi-camera me-2"></i>Démarrer Caméra
+                        </button>
+                        <button class="capture-btn" id="capture-face" onclick="captureFace()" style="display: none;">
+                            <i class="bi bi-camera me-2"></i>Capturer (<span id="capture-count">0</span>/10)
+                        </button>
+                    </div>
+                    
+                    <div class="preview-container" id="face-previews"></div>
+                    <p class="text-muted small mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Capturez 10 images de votre visage sous différents angles pour une meilleure précision
+                    </p>
+                </div>
+                
+                <!-- Étape 3: Empreinte Digitale -->
+                <div class="step-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="step-number">3</div>
+                            <h5 class="mb-0">Empreinte Digitale</h5>
+                        </div>
+                        <span class="status-badge status-pending" id="fingerprint-status">
+                            <i class="bi bi-clock me-1"></i>En attente
+                        </span>
+                    </div>
+                    
+                    <div class="fingerprint-upload" id="fingerprint-drop" onclick="document.getElementById('fingerprint-input').click()">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #667eea;"></i>
+                        <p class="mt-2 mb-0">Cliquez ou glissez une image d'empreinte digitale</p>
+                        <small class="text-muted">Formats acceptés: JPG, PNG, BMP</small>
+                        <input type="file" id="fingerprint-input" accept="image/*" style="display: none;" onchange="handleFingerprint(this)">
+                    </div>
+                    
+                    <div class="text-center mt-3" id="fingerprint-preview-container" style="display: none;">
+                        <img id="fingerprint-preview" class="fingerprint-preview">
+                        <p class="mt-2 text-success" id="minutiae-count"></p>
+                    </div>
+                </div>
+                
+                <!-- Bouton d'enregistrement -->
+                <div class="text-center mb-4">
+                    <button class="btn btn-lg capture-btn" id="register-btn" onclick="registerBeneficiary()" disabled>
+                        <i class="bi bi-check-circle me-2"></i>Enregistrer le Bénéficiaire
+                    </button>
+                </div>
+                
+                <!-- Résultat -->
+                <div class="result-card" id="result-card" style="display: none;">
+                    <i class="bi bi-check-circle" style="font-size: 4rem;"></i>
+                    <h3 class="mt-3">Enregistrement Réussi!</h3>
+                    <p>L'identifiant biométrique a été généré:</p>
+                    <div class="bio-id" id="generated-bio-id"></div>
+                    <p class="mb-0">Conservez cet identifiant précieusement</p>
+                    <button class="btn btn-light mt-3" onclick="resetForm()">
+                        <i class="bi bi-plus-circle me-2"></i>Nouvel Enrôlement
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let video = document.getElementById('video-feed');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream = null;
+        let faceEncodings = [];
+        let fingerprintFeatures = null;
+        let captureCount = 0;
+        const MAX_CAPTURES = 10;
+        
+        // Démarrer la caméra
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                
+                document.getElementById('start-camera').style.display = 'none';
+                document.getElementById('capture-face').style.display = 'inline-block';
+            } catch (err) {
+                alert('Erreur accès caméra: ' + err.message);
+            }
+        }
+        
+        // Capturer le visage
+        async function captureFace() {
+            if (captureCount >= MAX_CAPTURES) return;
+            
+            // Dessiner l'image sur le canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            // Convertir en base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Envoyer au serveur
+            try {
+                const response = await fetch('/api/capture_face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && Array.isArray(data.data.encoding)) {
+                    faceEncodings.push(data.data.encoding);
+                    captureCount++;
+                    
+                    // Ajouter preview
+                    const preview = document.createElement('img');
+                    preview.src = imageData;
+                    preview.className = 'face-preview';
+                    document.getElementById('face-previews').appendChild(preview);
+                    
+                    // Mettre à jour compteur
+                    document.getElementById('capture-count').textContent = captureCount;
+                    
+                    // Effet flash
+                    video.style.opacity = '0.5';
+                    setTimeout(() => { video.style.opacity = '1'; }, 100);
+                    
+                    if (captureCount >= MAX_CAPTURES) {
+                        updateFaceStatus('success', `${captureCount} captures effectuées`);
+                        document.getElementById('capture-face').disabled = true;
+                        checkCanRegister();
+                    }
+                } else {
+                    console.warn('Réponse API:', data);
+                    alert(data.error || 'Aucun visage détecté dans cette capture');
+                }
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
+        }
+        
+        // Gérer l'upload d'empreinte
+        async function handleFingerprint(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Afficher preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('fingerprint-preview').src = e.target.result;
+                document.getElementById('fingerprint-preview-container').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Envoyer au serveur
+            const formData = new FormData();
+            formData.append('fingerprint', file);
+            
+            try {
+                updateFingerprintStatus('pending', 'Traitement...');
+                
+                const response = await fetch('/api/process_fingerprint', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    fingerprintFeatures = data.data.features;
+                    document.getElementById('minutiae-count').textContent = 
+                        `${data.data.minutiae_count} minutiae détectées`;
+                    updateFingerprintStatus('success', `${data.data.minutiae_count} minutiae`);
+                    checkCanRegister();
+                } else {
+                    updateFingerprintStatus('error', data.error || 'Erreur traitement empreinte');
+                }
+            } catch (err) {
+                updateFingerprintStatus('error', err.message);
+            }
+        }
+        
+        // Drag & Drop
+        const dropZone = document.getElementById('fingerprint-drop');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                document.getElementById('fingerprint-input').files = files;
+                handleFingerprint(document.getElementById('fingerprint-input'));
+            }
+        });
+        
+        // Mettre à jour les statuts
+        function updateFaceStatus(type, text) {
+            const badge = document.getElementById('face-status');
+            badge.className = `status-badge status-${type}`;
+            badge.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'clock'} me-1"></i>${text}`;
+        }
+        
+        function updateFingerprintStatus(type, text) {
+            const badge = document.getElementById('fingerprint-status');
+            badge.className = `status-badge status-${type}`;
+            badge.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'clock'} me-1"></i>${text}`;
+        }
+        
+        // Vérifier si on peut enregistrer
+        function checkCanRegister() {
+            const name = document.getElementById('beneficiary-name').value.trim();
+            const hasFace = faceEncodings.length >= MAX_CAPTURES;
+            const hasFingerprint = fingerprintFeatures !== null;
+            const hasConsent = document.getElementById('consent-checkbox').checked && 
+                              document.getElementById('consent-storage').checked;
+            
+            document.getElementById('register-btn').disabled = !(name && (hasFace || hasFingerprint) && hasConsent);
+        }
+        
+        document.getElementById('beneficiary-name').addEventListener('input', checkCanRegister);
+        document.getElementById('consent-checkbox').addEventListener('change', checkCanRegister);
+        document.getElementById('consent-storage').addEventListener('change', checkCanRegister);
+        
+        // Enregistrer le bénéficiaire
+        async function registerBeneficiary() {
+            const name = document.getElementById('beneficiary-name').value.trim();
+            
+            if (!name) {
+                alert('Veuillez entrer un nom');
+                return;
+            }
+            
+            // Vérifier consentement
+            const consentGiven = document.getElementById('consent-checkbox').checked;
+            const consentStorage = document.getElementById('consent-storage').checked;
+            
+            if (!consentGiven || !consentStorage) {
+                alert('Veuillez accepter les conditions de consentement');
+                return;
+            }
+            
+            // Calculer l'encodage moyen des visages
+            let avgFaceEncoding = null;
+            if (faceEncodings.length > 0 && Array.isArray(faceEncodings[0])) {
+                avgFaceEncoding = faceEncodings[0].map((_, i) => {
+                    const sum = faceEncodings.reduce((acc, enc) => {
+                        return acc + (Array.isArray(enc) ? enc[i] : 0);
+                    }, 0);
+                    return sum / faceEncodings.length;
+                });
+            }
+            
+            // Vérifier qu'on a au moins une donnée biométrique valide
+            if (!avgFaceEncoding && !fingerprintFeatures) {
+                alert('Veuillez capturer au moins un visage ou une empreinte digitale');
+                return;
+            }
+            
+            // Récupérer le token
+            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        face_encoding: avgFaceEncoding,
+                        fingerprint_features: fingerprintFeatures,
+                        consent: {
+                            consent_given: consentGiven,
+                            consent_storage: consentStorage,
+                            consent_date: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('generated-bio-id').textContent = data.data.bio_id;
+                    document.getElementById('result-card').style.display = 'block';
+                    
+                    // Arrêter la caméra
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
+        }
+        
+        // Helper pour récupérer un cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        
+        // Afficher les infos utilisateur
+        function displayUserInfo() {
+            const userStr = localStorage.getItem('bioIdUser');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('user-info').innerHTML = 
+                    `<i class="bi bi-person-circle me-1"></i>${user.username} (${user.role})`;
+            }
+        }
+        displayUserInfo();
+        
+        // Déconnexion
+        async function logout() {
+            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
+            
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+            } catch (e) {
+                // Ignorer les erreurs
+            }
+            
+            // Supprimer les données locales
+            localStorage.removeItem('bioIdToken');
+            localStorage.removeItem('bioIdUser');
+            document.cookie = 'bioIdToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            
+            // Rediriger vers login
+            window.location.href = '/login';
+        }
+        
+        // Réinitialiser le formulaire
+        function resetForm() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

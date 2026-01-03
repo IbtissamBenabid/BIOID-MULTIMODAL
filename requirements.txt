@@ -1,0 +1,31 @@
+# BioID - Dépendances
+# Version 2.0 - Système Biométrique Multimodal Sécurisé
+
+# Core
+setuptools>=69.0.0
+wheel
+flask>=3.0.0
+numpy>=1.26.0
+
+# Vision & Image Processing
+opencv-python>=4.8.0
+pillow>=10.0.0
+scikit-image>=0.22.0
+
+# Face Recognition
+cmake
+dlib
+face_recognition
+
+# Fingerprint Processing
+scipy>=1.11.0
+
+# Voice Processing (optionnel)
+librosa>=0.10.0
+sounddevice>=0.4.6
+
+# Security & Cryptography
+cryptography>=41.0.0
+
+# Metrics
+scipy>=1.11.0
