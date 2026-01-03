@@ -26,6 +26,11 @@ sounddevice>=0.4.6
 
 # Security & Cryptography
 cryptography>=41.0.0
+PyJWT>=2.8.0
+bcrypt>=4.0.0
+
+# Database
+psycopg2-binary>=2.9.0
 
 # Metrics
 scipy>=1.11.0

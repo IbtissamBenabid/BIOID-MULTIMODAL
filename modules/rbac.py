@@ -8,15 +8,13 @@ import hashlib
 from datetime import datetime
 from enum import Enum
 from functools import wraps
+from modules.database import DatabaseManager
 
 
 class Role(Enum):
     """Rôles du système"""
     ADMIN = "admin"           # Administrateur système
-    OPERATOR = "operator"     # Opérateur d'enrôlement
-    AUDITOR = "auditor"       # Auditeur (lecture seule)
-    USER = "user"             # Utilisateur standard
-    SYSTEM = "system"         # Processus système
+    AGENT = "agent"           # Agent d'enrôlement et vérification
 
 
 class Permission(Enum):
@@ -26,22 +24,22 @@ class Permission(Enum):
     ENROLL_READ = "enroll:read"
     ENROLL_UPDATE = "enroll:update"
     ENROLL_DELETE = "enroll:delete"
-    
+
     # Vérification
     VERIFY_EXECUTE = "verify:execute"
-    
+
     # Identification
     IDENTIFY_EXECUTE = "identify:execute"
-    
+
     # Données
     DATA_READ = "data:read"
     DATA_EXPORT = "data:export"
     DATA_DELETE = "data:delete"
-    
+
     # Audit
     AUDIT_READ = "audit:read"
     AUDIT_EXPORT = "audit:export"
-    
+
     # Administration
     ADMIN_USERS = "admin:users"
     ADMIN_CONFIG = "admin:config"
@@ -51,30 +49,14 @@ class Permission(Enum):
 # Matrice des permissions par rôle
 ROLE_PERMISSIONS = {
     Role.ADMIN: [p for p in Permission],  # Toutes les permissions
-    
-    Role.OPERATOR: [
+
+    Role.AGENT: [
         Permission.ENROLL_CREATE,
         Permission.ENROLL_READ,
         Permission.ENROLL_UPDATE,
         Permission.VERIFY_EXECUTE,
         Permission.IDENTIFY_EXECUTE,
         Permission.DATA_READ,
-    ],
-    
-    Role.AUDITOR: [
-        Permission.ENROLL_READ,
-        Permission.DATA_READ,
-        Permission.AUDIT_READ,
-        Permission.AUDIT_EXPORT,
-    ],
-    
-    Role.USER: [
-        Permission.VERIFY_EXECUTE,
-    ],
-    
-    Role.SYSTEM: [
-        Permission.VERIFY_EXECUTE,
-        Permission.IDENTIFY_EXECUTE,
         Permission.AUDIT_READ,
     ]
 }
@@ -82,154 +64,158 @@ ROLE_PERMISSIONS = {
 
 class RBACManager:
     """Gère les rôles, utilisateurs et permissions"""
-    
-    def __init__(self, users_file="data/security/users.json"):
+
+    def __init__(self):
         """
+        Initialize RBAC Manager with database
+        """
+        self.db = DatabaseManager()
+
+    def has_permission(self, role, permission):
+        """
+        Vérifie si un rôle a une permission
+
         Args:
-            users_file: Fichier de stockage des utilisateurs
+            role: Rôle à vérifier
+            permission: Permission à vérifier
+
+        Returns:
+            bool: True si le rôle a la permission
         """
-        self.users_file = users_file
-        self.users = self._load_users()
-    
-    def _load_users(self):
-        """Charge les utilisateurs depuis le fichier"""
-        os.makedirs(os.path.dirname(self.users_file), exist_ok=True)
-        
-        if os.path.exists(self.users_file):
-            with open(self.users_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        
-        # Créer des utilisateurs par défaut
-        default_users = {
-            "users": {
-                "admin": {
-                    "password_hash": self._hash_password("admin123"),  # À changer!
-                    "role": Role.ADMIN.value,
-                    "created_at": datetime.now().isoformat(),
-                    "active": True,
-                    "must_change_password": True
-                },
-                "operator": {
-                    "password_hash": self._hash_password("op123"),
-                    "role": Role.OPERATOR.value,
-                    "created_at": datetime.now().isoformat(),
-                    "active": True,
-                    "must_change_password": True
-                },
-                "auditor": {
-                    "password_hash": self._hash_password("audit123"),
-                    "role": Role.AUDITOR.value,
-                    "created_at": datetime.now().isoformat(),
-                    "active": True,
-                    "must_change_password": True
-                }
-            }
-        }
-        self._save_users(default_users)
-        print("[RBAC] Utilisateurs par défaut créés:")
-        print("  - admin / admin123 (Admin)")
-        print("  - operator / op123 (Opérateur)")
-        print("  - auditor / audit123 (Auditeur)")
-        
-        return default_users
-    
-    def _save_users(self, users=None):
-        """Sauvegarde les utilisateurs"""
-        with open(self.users_file, 'w', encoding='utf-8') as f:
-            json.dump(users or self.users, f, indent=2)
-    
-    def _hash_password(self, password):
-        """Hash un mot de passe"""
-        salt = "bioid_salt_v1"  # En production: salt unique par utilisateur
-        return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
-    
-    def create_user(self, username, password, role, created_by="system"):
+        if isinstance(role, str):
+            try:
+                role = Role(role)
+            except ValueError:
+                return False
+
+        if isinstance(permission, str):
+            try:
+                permission = Permission(permission)
+            except ValueError:
+                return False
+
+        return permission in ROLE_PERMISSIONS.get(role, [])
+
+    def get_user_permissions(self, username):
         """
-        Crée un nouvel utilisateur
-        
+        Récupère les permissions d'un utilisateur
+
         Args:
             username: Nom d'utilisateur
-            password: Mot de passe
-            role: Rôle (Role enum ou string)
-            created_by: Utilisateur créateur
-            
+
         Returns:
-            bool: Succès
+            list: Liste des permissions
         """
-        if username in self.users["users"]:
-            return False
-        
-        role_value = role.value if isinstance(role, Role) else role
-        
-        self.users["users"][username] = {
-            "password_hash": self._hash_password(password),
-            "role": role_value,
-            "created_at": datetime.now().isoformat(),
-            "created_by": created_by,
-            "active": True,
-            "must_change_password": True
-        }
-        
-        self._save_users()
-        return True
-    
-    def authenticate(self, username, password):
+        # This would be called after authentication
+        # For now, return permissions based on role from database
+        # In practice, this should be cached or retrieved from JWT token
+        return []
+
+    def authenticate_user(self, username, password):
         """
         Authentifie un utilisateur
-        
+
         Args:
             username: Nom d'utilisateur
             password: Mot de passe
-            
+
         Returns:
-            tuple: (success: bool, role: str ou None)
+            dict or None: Données utilisateur si authentifié
         """
-        user = self.users["users"].get(username)
-        
-        if not user:
-            return False, None
-        
-        if not user["active"]:
-            return False, None
-        
-        if self._hash_password(password) != user["password_hash"]:
-            return False, None
-        
-        # Mettre à jour le dernier login
-        user["last_login"] = datetime.now().isoformat()
-        self._save_users()
-        
-        return True, user["role"]
-    
-    def check_permission(self, username, permission):
+        return self.db.authenticate_user(username, password)
+
+    def create_tokens(self, user_data):
         """
-        Vérifie si un utilisateur a une permission
-        
+        Crée les tokens JWT pour un utilisateur
+
         Args:
-            username: Nom d'utilisateur
-            permission: Permission à vérifier (Permission enum)
-            
+            user_data: Données de l'utilisateur
+
         Returns:
-            bool: A la permission
+            tuple: (access_token, refresh_token)
         """
-        user = self.users["users"].get(username)
-        if not user or not user["active"]:
-            return False
-        
-        role = Role(user["role"])
-        role_perms = ROLE_PERMISSIONS.get(role, [])
-        
-        return permission in role_perms
-    
-    def get_user_permissions(self, username):
-        """Retourne les permissions d'un utilisateur"""
-        user = self.users["users"].get(username)
+        token_data = {
+            "sub": user_data["username"],
+            "role": user_data["role"],
+            "user_id": user_data["id"]
+        }
+
+        access_token = self.db.create_access_token(token_data)
+        refresh_token = self.db.create_refresh_token(token_data)
+
+        # Store refresh token
+        self.db.store_refresh_token(user_data["id"], refresh_token)
+
+        return access_token, refresh_token
+
+    def verify_access_token(self, token):
+        """
+        Vérifie un token d'accès JWT
+
+        Args:
+            token: Token JWT
+
+        Returns:
+            dict or None: Payload du token si valide
+        """
+        return self.db.verify_token(token, "access")
+
+    def verify_refresh_token(self, token):
+        """
+        Vérifie un token de rafraîchissement JWT
+
+        Args:
+            token: Token de rafraîchissement
+
+        Returns:
+            dict or None: Payload du token si valide
+        """
+        return self.db.verify_token(token, "refresh")
+
+    def refresh_access_token(self, refresh_token):
+        """
+        Rafraîchit un token d'accès
+
+        Args:
+            refresh_token: Token de rafraîchissement
+
+        Returns:
+            str or None: Nouveau token d'accès
+        """
+        payload = self.verify_refresh_token(refresh_token)
+        if not payload:
+            return None
+
+        # Verify refresh token exists in database
+        user = self.db.get_user_by_refresh_token(refresh_token)
         if not user:
-            return []
-        
-        role = Role(user["role"])
-        return [p.value for p in ROLE_PERMISSIONS.get(role, [])]
-    
+            return None
+
+        # Create new access token
+        token_data = {
+            "sub": user["username"],
+            "role": user["role"],
+            "user_id": user["id"]
+        }
+
+        return self.db.create_access_token(token_data)
+
+    def is_first_user(self):
+        """Check if this is the first user (for initial setup)"""
+        return self.db.is_first_user()
+
+    def create_user(self, username, password, role, created_by=None):
+        """Create a new user"""
+        return self.db.create_user(username, password, role, created_by)
+
+    def change_password(self, user_id, old_password, new_password):
+        """Change user password"""
+        return self.db.change_password(user_id, old_password, new_password)
+
+    def get_all_users(self):
+        """Get all users (admin only)"""
+        return self.db.get_all_users()
+
     def get_permissions(self, role_str):
         """Retourne les permissions d'un rôle (par nom de rôle)"""
         try:
@@ -237,115 +223,44 @@ class RBACManager:
             return [p.value for p in ROLE_PERMISSIONS.get(role, [])]
         except ValueError:
             return []
-    
-    def has_permission(self, role_str, permission_str):
+
+    def log_audit_event(self, user_id, action, resource=None, details=None, ip_address=None):
         """
-        Vérifie si un rôle a une permission spécifique
-        
+        Log an audit event
+
         Args:
-            role_str: Nom du rôle (string)
-            permission_str: Nom de la permission (string)
-            
-        Returns:
-            bool: A la permission
+            user_id: User ID
+            action: Action performed
+            resource: Resource affected
+            details: Additional details
+            ip_address: Client IP address
         """
-        try:
-            role = Role(role_str)
-            role_perms = ROLE_PERMISSIONS.get(role, [])
-            
-            # Chercher la permission par sa valeur
-            for perm in role_perms:
-                if perm.value == permission_str:
-                    return True
-            return False
-        except ValueError:
-            return False
-    
-    def change_password(self, username, old_password, new_password):
-        """Change le mot de passe d'un utilisateur"""
-        success, result = self.authenticate(username, old_password)
-        if not success:
-            return False, result
-        
-        self.users["users"][username]["password_hash"] = self._hash_password(new_password)
-        self.users["users"][username]["must_change_password"] = False
-        self._save_users()
-        
-        return True, "Mot de passe changé"
-    
-    def deactivate_user(self, username, deactivated_by):
-        """Désactive un utilisateur"""
-        if username not in self.users["users"]:
-            return False, "Utilisateur non trouvé"
-        
-        self.users["users"][username]["active"] = False
-        self.users["users"][username]["deactivated_at"] = datetime.now().isoformat()
-        self.users["users"][username]["deactivated_by"] = deactivated_by
-        self._save_users()
-        
-        return True, "Utilisateur désactivé"
-    
-    def list_users(self):
-        """Liste tous les utilisateurs (sans mots de passe)"""
-        return [
-            {
-                "username": username,
-                "role": data["role"],
-                "active": data["active"],
-                "created_at": data["created_at"],
-                "last_login": data.get("last_login")
-            }
-            for username, data in self.users["users"].items()
-        ]
+        self.db.log_audit_event(user_id, action, resource, details, ip_address)
 
 
 def require_permission(permission):
     """
     Décorateur pour vérifier les permissions sur les routes Flask
-    
+
     Usage:
         @require_permission(Permission.ENROLL_CREATE)
         def create_enrollment():
             ...
     """
     def decorator(f):
-        @wraps(f)
+        from flask import request, jsonify, g
+
         def decorated_function(*args, **kwargs):
-            from flask import request, jsonify, g
-            
             # Récupérer l'utilisateur depuis le contexte (à définir via middleware)
             username = getattr(g, 'current_user', None)
-            
+
             if not username:
                 return jsonify({"error": "Non authentifié"}), 401
-            
+
             rbac = RBACManager()
-            if not rbac.check_permission(username, permission):
+            if not rbac.has_permission(g.current_role, permission):
                 return jsonify({"error": "Permission refusée"}), 403
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
-
-# Test du module
-if __name__ == "__main__":
-    print("=== Test du module RBAC ===")
-    
-    rbac = RBACManager()
-    
-    # Créer des utilisateurs de test
-    rbac.create_user("operator1", "op123", Role.OPERATOR, "admin")
-    rbac.create_user("auditor1", "audit123", Role.AUDITOR, "admin")
-    
-    # Test authentification
-    success, result = rbac.authenticate("admin", "admin123")
-    print(f"[OK] Auth admin: {success}, {result}")
-    
-    # Test permissions
-    print(f"[OK] Admin peut créer enroll: {rbac.check_permission('admin', Permission.ENROLL_CREATE)}")
-    print(f"[OK] Auditor peut créer enroll: {rbac.check_permission('auditor1', Permission.ENROLL_CREATE)}")
-    print(f"[OK] Auditor peut lire audit: {rbac.check_permission('auditor1', Permission.AUDIT_READ)}")
-    
-    # Liste utilisateurs
-    print(f"[OK] Utilisateurs: {rbac.list_users()}")

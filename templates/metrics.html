@@ -541,6 +541,31 @@
         let detChart = null;
         let testDistributionChart = null;
         
+        // Fonction helper pour les appels API authentifiés
+        async function authenticatedFetch(url, options = {}) {
+            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            return fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+        
+        // Helper pour récupérer un cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
             loadMetrics();
@@ -548,7 +573,7 @@
         
         async function loadMetrics() {
             try {
-                const response = await fetch('/api/metrics/report');
+                const response = await authenticatedFetch('/api/metrics/report');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -982,7 +1007,7 @@
             if (!confirm('Générer des données de test simulées? Ceci est utile pour démonstration.')) return;
             
             try {
-                const response = await fetch('/api/metrics/generate_test_data', {
+                const response = await authenticatedFetch('/api/metrics/generate_test_data', {
                     method: 'POST'
                 });
                 const data = await response.json();
@@ -1000,7 +1025,7 @@
         
         async function exportReport() {
             try {
-                const response = await fetch('/api/metrics/report');
+                const response = await authenticatedFetch('/api/metrics/report');
                 const data = await response.json();
                 
                 const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});

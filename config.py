@@ -23,3 +23,12 @@ FINGERPRINT_RESIZE = (300, 400)
 
 # Base de données JSON simple pour le projet académique
 DATABASE_FILE = os.path.join(DATABASE_DIR, "beneficiaries.json")
+
+# Base de données PostgreSQL (Production)
+DATABASE_URL = "postgres://avnadmin:AVNS_PrGBoC-fUef_dB6Hakl@pg-39221806-etu-2442.d.aivencloud.com:22238/bioid?sslmode=require"
+
+# JWT Configuration
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'bioid-jwt-secret-key-2026')
+JWT_ALGORITHM = 'HS256'
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS = 7

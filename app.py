@@ -22,6 +22,7 @@ from modules.security import SecurityManager, DataProtection
 from modules.audit import AuditLogger, AuditEventType
 from modules.rbac import RBACManager, Role, Permission, require_permission
 from modules.metrics import BiometricMetrics
+from modules.database import DatabaseManager
 from config import FACES_DIR, FINGERPRINTS_DIR, DATABASE_FILE
 
 # Import optionnel voix
@@ -49,6 +50,7 @@ id_generator = BioIDGenerator(DATABASE_FILE)
 security_manager = SecurityManager()
 audit_logger = AuditLogger()
 rbac_manager = RBACManager()
+db_manager = DatabaseManager()
 metrics = BiometricMetrics()
 
 # Variable globale pour la caméra
@@ -78,38 +80,24 @@ def api_response(success, data=None, error=None, status_code=200):
 
 
 def require_auth(f):
-    """Décorateur pour authentification par token"""
+    """Décorateur pour authentification par token JWT"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.headers.get('Authorization')
-        
-        if auth and auth.startswith('Bearer '):
-            token = auth.split(' ')[1]
-            valid, username = security_manager.verify_token(token)
-            
-            if valid:
-                g.current_user = username
-                user = rbac_manager.users["users"].get(username, {})
-                g.current_role = user.get("role", "user")
-                return f(*args, **kwargs)
-        
-        # Vérifier aussi dans les cookies (pour les pages web)
-        token = request.cookies.get('bioIdToken')
-        if token:
-            valid, username = security_manager.verify_token(token)
-            if valid:
-                g.current_user = username
-                user = rbac_manager.users["users"].get(username, {})
-                g.current_role = user.get("role", "user")
-                return f(*args, **kwargs)
-        
-        # Mode développement: permettre sans auth pour certaines routes
-        if request.endpoint in ['video_feed', 'capture_face', 'process_fingerprint']:
-            g.current_user = "anonymous"
-            g.current_role = "operator"
-            return f(*args, **kwargs)
-        
-        return api_response(False, error="Non authentifié", status_code=401)
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return api_response(False, error="Token manquant ou invalide", status_code=401)
+
+        token = auth_header.split(' ')[1]
+        payload = rbac_manager.verify_access_token(token)
+
+        if not payload:
+            return api_response(False, error="Token invalide ou expiré", status_code=401)
+
+        g.current_user = payload['sub']
+        g.current_role = payload['role']
+        g.user_id = payload['user_id']
+        return f(*args, **kwargs)
     return decorated
 
 
@@ -133,55 +121,69 @@ def require_permission(permission):
 
 @app.route('/login')
 def login_page():
-    """Page de connexion"""
+    """Page de connexion - authentication handled client-side"""
     return render_template('login.html')
+
+
+@app.route('/setup')
+def setup_page():
+    """Page de configuration initiale"""
+    return render_template('setup.html')
+
+
+@app.route('/api/setup/check')
+def api_setup_check():
+    """Check if initial setup is needed"""
+    try:
+        needs_setup = rbac_manager.is_first_user()
+        return jsonify({"needs_setup": needs_setup})
+    except Exception as e:
+        # If database error, assume setup is needed
+        return jsonify({"needs_setup": True})
 
 
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
-    """API de connexion"""
+    """API de connexion avec JWT"""
     data = request.get_json()
-    
+
     if not data:
         return api_response(False, error="Données manquantes", status_code=400)
-    
+
     username = data.get('username', '')
     password = data.get('password', '')
-    
+
     if not username or not password:
         return api_response(False, error="Nom d'utilisateur et mot de passe requis", status_code=400)
-    
+
     # Authentifier via RBAC
-    success, role = rbac_manager.authenticate(username, password)
-    
-    if success:
-        # Générer un token
-        token = security_manager.generate_token(username)
-        
+    user = rbac_manager.authenticate_user(username, password)
+
+    if user:
+        # Créer les tokens JWT
+        access_token, refresh_token = rbac_manager.create_tokens(user)
+
+        # Mettre à jour la dernière connexion
+        db_manager.update_last_login(user['id'])
+
         # Logger l'événement
-        audit_logger.log_event(
-            event_type=AuditEventType.LOGIN,
-            actor=username,
-            details={"ip": get_client_ip(), "role": role},
+        rbac_manager.log_audit_event(
+            user_id=user['id'],
+            action='LOGIN',
+            details={"ip": get_client_ip(), "role": user['role']},
             ip_address=get_client_ip()
         )
-        
+
         return api_response(True, data={
-            "token": token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
             "username": username,
-            "role": role,
-            "permissions": rbac_manager.get_permissions(role)
+            "role": user['role'],
+            "permissions": db_manager.get_user_permissions(user['role'])
         })
     else:
         # Logger la tentative échouée
-        audit_logger.log_event(
-            event_type=AuditEventType.FAILED_AUTH,
-            actor=username,
-            details={"reason": "Échec authentification", "ip": get_client_ip()},
-            ip_address=get_client_ip(),
-            success=False
-        )
-        
         return api_response(False, error="Identifiants invalides", status_code=401)
 
 
@@ -189,14 +191,150 @@ def api_login():
 @require_auth
 def api_logout():
     """API de déconnexion"""
-    audit_logger.log_event(
-        event_type=AuditEventType.LOGOUT,
-        actor=g.current_user,
+    # Invalidate refresh token
+    with db_manager.get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users
+                SET refresh_token = NULL
+                WHERE id = %s
+            """, (g.user_id,))
+            conn.commit()
+
+    rbac_manager.log_audit_event(
+        user_id=g.user_id,
+        action='LOGOUT',
         details={"ip": get_client_ip()},
         ip_address=get_client_ip()
     )
-    
+
     return api_response(True, data={"message": "Déconnexion réussie"})
+
+
+@app.route('/api/auth/refresh', methods=['POST'])
+def api_refresh_token():
+    """Rafraîchir le token d'accès"""
+    data = request.get_json()
+
+    if not data or 'refresh_token' not in data:
+        return api_response(False, error="Refresh token manquant", status_code=400)
+
+    refresh_token = data['refresh_token']
+    new_access_token = rbac_manager.refresh_access_token(refresh_token)
+
+    if new_access_token:
+        return api_response(True, data={
+            "access_token": new_access_token,
+            "token_type": "Bearer"
+        })
+    else:
+        return api_response(False, error="Refresh token invalide", status_code=401)
+
+
+@app.route('/api/setup', methods=['POST'])
+def api_initial_setup():
+    """Initial setup - create first admin user"""
+    if not rbac_manager.is_first_user():
+        return api_response(False, error="Configuration déjà effectuée", status_code=400)
+
+    data = request.get_json()
+    if not data:
+        return api_response(False, error="Données manquantes", status_code=400)
+
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not username or not password or len(password) < 8:
+        return api_response(False, error="Nom d'utilisateur et mot de passe (min 8 caractères) requis", status_code=400)
+
+    try:
+        user_id = rbac_manager.create_user(username, password, 'admin')
+        return api_response(True, data={
+            "message": "Administrateur créé avec succès",
+            "user_id": user_id
+        })
+    except Exception as e:
+        return api_response(False, error=f"Erreur lors de la création: {str(e)}", status_code=500)
+
+
+@app.route('/api/users', methods=['GET'])
+@require_auth
+@require_permission('admin:users')
+def api_list_users():
+    """List all users (admin only)"""
+    try:
+        users = rbac_manager.get_all_users()
+        return api_response(True, data={"users": users})
+    except Exception as e:
+        return api_response(False, error=f"Erreur: {str(e)}", status_code=500)
+
+
+@app.route('/api/users', methods=['POST'])
+@require_auth
+@require_permission('admin:users')
+def api_create_user():
+    """Create a new user (admin only)"""
+    data = request.get_json()
+    if not data:
+        return api_response(False, error="Données manquantes", status_code=400)
+
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    role = data.get('role', '')
+
+    if not username or not password or role not in ['admin', 'agent']:
+        return api_response(False, error="Nom d'utilisateur, mot de passe et rôle valide requis", status_code=400)
+
+    if len(password) < 8:
+        return api_response(False, error="Le mot de passe doit contenir au moins 8 caractères", status_code=400)
+
+    try:
+        user_id = rbac_manager.create_user(username, password, role, g.user_id)
+        return api_response(True, data={
+            "message": "Utilisateur créé avec succès",
+            "user_id": user_id
+        })
+    except Exception as e:
+        return api_response(False, error=f"Erreur lors de la création: {str(e)}", status_code=500)
+
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@require_auth
+@require_permission('admin:users')
+def api_deactivate_user(user_id):
+    """Deactivate a user (admin only)"""
+    if user_id == g.user_id:
+        return api_response(False, error="Impossible de se désactiver soi-même", status_code=400)
+
+    try:
+        rbac_manager.deactivate_user(user_id, g.user_id)
+        return api_response(True, data={"message": "Utilisateur désactivé"})
+    except Exception as e:
+        return api_response(False, error=f"Erreur: {str(e)}", status_code=500)
+
+
+@app.route('/api/auth/change-password', methods=['POST'])
+@require_auth
+def api_change_password():
+    """Change current user's password"""
+    data = request.get_json()
+    if not data:
+        return api_response(False, error="Données manquantes", status_code=400)
+
+    old_password = data.get('old_password', '')
+    new_password = data.get('new_password', '')
+
+    if not old_password or not new_password or len(new_password) < 8:
+        return api_response(False, error="Ancien et nouveau mot de passe (min 8 caractères) requis", status_code=400)
+
+    try:
+        success = rbac_manager.change_password(g.user_id, old_password, new_password)
+        if success:
+            return api_response(True, data={"message": "Mot de passe changé avec succès"})
+        else:
+            return api_response(False, error="Ancien mot de passe incorrect", status_code=400)
+    except Exception as e:
+        return api_response(False, error=f"Erreur: {str(e)}", status_code=500)
 
 
 @app.route('/api/auth/me', methods=['GET'])
@@ -279,48 +417,37 @@ def release_camera():
 
 def check_auth():
     """Vérifie si l'utilisateur est authentifié (sans décorateur)"""
-    # Vérifier le header Authorization
+    # Check for JWT token
     auth = request.headers.get('Authorization')
     if auth and auth.startswith('Bearer '):
         token = auth.split(' ')[1]
-        valid, username = security_manager.verify_token(token)
-        if valid:
-            return True, username
-    
-    # Vérifier le cookie
-    token = request.cookies.get('bioIdToken')
-    if token:
-        valid, username = security_manager.verify_token(token)
-        if valid:
-            return True, username
-    
+        payload = rbac_manager.verify_access_token(token)
+        if payload:
+            return True, payload['sub']
+
+    # Check localStorage via JavaScript (not directly accessible server-side)
+    # This is mainly for API calls, web pages handle auth client-side
+
     return False, None
 
 
 @app.route('/')
 def index():
-    """Page d'accueil - redirige vers login si non authentifié"""
-    is_auth, _ = check_auth()
-    if not is_auth:
-        return redirect(url_for('login_page'))
+    """Page d'accueil - authentication handled client-side"""
+    # For web pages, authentication is handled client-side with JWT tokens
+    # Don't do server-side checks here as browsers don't send Authorization headers
     return render_template('index.html')
 
 
 @app.route('/enroll')
 def enroll_page():
-    """Page d'enrôlement - nécessite authentification"""
-    is_auth, _ = check_auth()
-    if not is_auth:
-        return redirect(url_for('login_page'))
+    """Page d'enrôlement"""
     return render_template('enroll.html')
 
 
 @app.route('/verify')
 def verify_page():
-    """Page de vérification - nécessite authentification"""
-    is_auth, _ = check_auth()
-    if not is_auth:
-        return redirect(url_for('login_page'))
+    """Page de vérification"""
     return render_template('verify.html')
 
 

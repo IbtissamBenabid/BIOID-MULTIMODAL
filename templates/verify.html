@@ -318,7 +318,7 @@
         // Charger la liste des bénéficiaires
         async function loadBeneficiaries() {
             try {
-                const response = await fetch('/api/beneficiaries');
+                const response = await authenticatedFetch('/api/beneficiaries');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -379,7 +379,7 @@
                 document.getElementById('face-status').innerHTML = 
                     '<i class="bi bi-hourglass-split text-warning me-1"></i>Traitement...';
                 
-                const response = await fetch('/api/capture_face', {
+                const response = await authenticatedFetch('/api/capture_face', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: imageData })
@@ -417,7 +417,7 @@
                 document.getElementById('fingerprint-status').innerHTML = 
                     '<i class="bi bi-hourglass-split text-warning me-1"></i>Traitement...';
                 
-                const response = await fetch('/api/process_fingerprint', {
+                const response = await authenticatedFetch('/api/process_fingerprint', {
                     method: 'POST',
                     body: formData
                 });
@@ -593,7 +593,7 @@
             formData.append('voice', audioBlob, 'recording.wav');
             
             try {
-                const response = await fetch('/api/process_voice', {
+                const response = await authenticatedFetch('/api/process_voice', {
                     method: 'POST',
                     body: formData
                 });
@@ -628,7 +628,7 @@
             }
             
             try {
-                const response = await fetch('/api/verify', {
+                const response = await authenticatedFetch('/api/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -693,6 +693,23 @@
         }
         displayUserInfo();
         
+        // Fonction helper pour les appels API authentifiés
+        async function authenticatedFetch(url, options = {}) {
+            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            return fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+        
         // Helper pour récupérer un cookie
         function getCookie(name) {
             const value = `; ${document.cookie}`;
@@ -703,12 +720,9 @@
         
         // Déconnexion
         async function logout() {
-            const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
-            
             try {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+                await authenticatedFetch('/api/auth/logout', {
+                    method: 'POST'
                 });
             } catch (e) {}
             
