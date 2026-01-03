@@ -644,6 +644,60 @@
       "details": {
         "access_type": "list_all"
       }
+    },
+    {
+      "event_id": "3eaca2b44f82d694",
+      "timestamp": "2026-01-03T20:26:59.374256",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "77cf4a01d90a727b",
+      "timestamp": "2026-01-03T20:27:09.368659",
+      "event_type": "data_access",
+      "actor": "admin",
+      "bio_id": null,
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "access_type": "list_all"
+      }
+    },
+    {
+      "event_id": "0e4428893704b515",
+      "timestamp": "2026-01-03T20:27:33.485968",
+      "event_type": "verification",
+      "actor": "system",
+      "bio_id": "BIO-3F260C76-A4D1",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "confidence": {
+          "face": 74.61786088485859,
+          "fingerprint": 100.0
+        }
+      }
+    },
+    {
+      "event_id": "1391701551ebb419",
+      "timestamp": "2026-01-03T20:27:37.427038",
+      "event_type": "verification",
+      "actor": "system",
+      "bio_id": "BIO-3F260C76-A4D1",
+      "success": true,
+      "ip_address": "127.0.0.1",
+      "details": {
+        "confidence": {
+          "face": 74.61786088485859,
+          "fingerprint": 100.0
+        }
+      }
     }
   ]
 }
