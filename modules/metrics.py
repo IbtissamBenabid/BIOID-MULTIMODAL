@@ -36,29 +36,32 @@ class BiometricMetrics:
         """Charge les résultats de vérification"""
         os.makedirs(os.path.dirname(self.results_file), exist_ok=True)
 
-        # Initialize with empty structure
-        data = {"genuine": [], "impostor": []}
+        print("[METRICS] 🔄 Always reloading from audit logs to ensure fresh data...")
+        
+        # Always try to ingest from audit logs first (Source of Truth)
+        ingested = self._ingest_from_audit_logs()
+        
+        if ingested:
+            # Save newly calculated results
+            self._save_results()
+            return self.results
+            
+        print("[METRICS] ⚠️ No audit log data found. Checking for cached metrics...")
 
-        # 1. Load from explicit results file (e.g. generated test data)
+        # Fallback: Load existing file if audit logs didn't yield anything
         if os.path.exists(self.results_file):
             try:
                 with open(self.results_file, 'r') as f:
-                    file_data = json.load(f)
-                    if isinstance(file_data, dict) and ("genuine" in file_data or "impostor" in file_data):
-                        data = file_data
-            except Exception:
-                pass
+                    data = json.load(f)
+                    if isinstance(data, dict) and ("genuine" in data or "impostor" in data):
+                        print(f"[METRICS] Loaded cached metrics from {self.results_file}")
+                        return data
+            except Exception as e:
+                print(f"[METRICS] Error loading existing file: {e}")
 
-        # 2. Ingest from audit logs (live data) and merge
-        # We pass the current data to append to it
-        self.results = data
-        self._ingest_from_audit_logs()
-        
-        return self.results
-
-    def refresh(self):
-        """Rafraîchit les métriques depuis les logs"""
-        self.results = self._load_results()
+        # Fallback: empty structure
+        print("[METRICS] Warning: No data found anywhere. Returning empty metrics.")
+        return {"genuine": [], "impostor": []}
 
     def _ingest_from_audit_logs(self) -> bool:
         """Ingest verification events from audit logs to populate metrics.
@@ -68,33 +71,36 @@ class BiometricMetrics:
         compatible with FAR/FRR methods (lower score = better match).
         """
         audit_dir = os.path.join(DATA_DIR, "audit")
+        print(f"[METRICS] Scanning audit directory: {audit_dir}")
+        
         if not os.path.isdir(audit_dir):
+            print(f"[METRICS] Audit directory not found: {audit_dir}")
             return False
 
         any_found = False
-        # Note: self.results is already initialized, we append to it
+        # ensure results structure
+        self.results = {"genuine": [], "impostor": []}
         
-        # Build set of existing signatures to avoid duplicates
-        # Signature: (timestamp, modality, score)
-        existing_signatures = set()
-        for category in ["genuine", "impostor"]:
-            for r in self.results.get(category, []):
-                # Use a tuple for hashability
-                sig = (r.get("timestamp"), r.get("modality"), r.get("score"))
-                existing_signatures.add(sig)
+        files = sorted([f for f in os.listdir(audit_dir) if f.endswith('.json')])
+        if not files:
+            print("[METRICS] No JSON log files found in audit directory.")
+            return False
 
-        for fname in sorted(os.listdir(audit_dir)):
-            if not fname.endswith('.json'):
-                continue
+        print(f"[METRICS] Found {len(files)} log files: {files}")
+
+        for fname in files:
+            print(f"[METRICS] Processing file: {fname}")
             path = os.path.join(audit_dir, fname)
             try:
-                with open(path, 'r') as f:
+                with open(path, 'r', encoding='utf-8') as f:
                     content = json.load(f)
-            except Exception:
+            except Exception as e:
+                print(f"[METRICS] Error reading {fname}: {e}")
                 continue
 
             logs = content.get('logs') if isinstance(content, dict) else content
             if not logs:
+                print(f"[METRICS] No logs found in {fname}")
                 continue
 
             for event in logs:
@@ -106,6 +112,9 @@ class BiometricMetrics:
                     success = event.get('success', False)
                     details = event.get('details', {}) or {}
                     confidence = details.get('confidence') or {}
+                    bio_id = event.get('bio_id', 'unknown')
+
+                    print(f"[METRICS] Use event: {timestamp} | BioID: {bio_id} | Success: {success} | Raw Confidence: {confidence}")
 
                     # confidence is expected to be a dict like {"face": 78.7, "fingerprint": 94.6}
                     if isinstance(confidence, dict):
@@ -126,36 +135,32 @@ class BiometricMetrics:
                             else:
                                 # assume similarity where higher is better -> convert
                                 score = max(0.0, min(1.0, 1.0 - num))
-                            
-                            score = float(score)
-                            
-                            # Check for duplicate
-                            sig = (timestamp, modality, score)
-                            if sig in existing_signatures:
-                                continue
 
                             record = {
-                                "score": score,
+                                "score": float(score),
                                 "modality": modality,
                                 "timestamp": timestamp
                             }
+                            
+                            print(f"  -> Ingested {modality}: score={score:.4f} (derived from {num})")
 
                             if success:
                                 self.results['genuine'].append(record)
                             else:
                                 self.results['impostor'].append(record)
-                            
-                            existing_signatures.add(sig)
-                            any_found = True
 
-                except Exception:
-                    # Skip malformed events
+                            any_found = True
+                    else:
+                        print(f"  -> Skipped: Confidence is not a dict: {type(confidence)}")
+
+                except Exception as e:
+                    print(f"[METRICS] Error processing event: {e}")
                     continue
 
         if any_found:
-            print(f"[metrics] Ingested metrics from audit logs in {audit_dir}")
-            # Save updated results to cache them
-            self._save_results()
+            print(f"[METRICS] Successfully ingested {len(self.results['genuine'])} genuine and {len(self.results['impostor'])} impostor records.")
+        else:
+            print("[METRICS] No verification events found in logs.")
             
         return any_found
     
@@ -275,20 +280,16 @@ class BiometricMetrics:
         except:
             return None, None
     
-    def analyze_thresholds(self, modality=None, refresh=True):
+    def analyze_thresholds(self, modality=None):
         """
         Analyse des seuils et recommandations
         
         Args:
             modality: Filtrer par modalité
-            refresh: Rafraîchir les données avant analyse (défaut: True)
             
         Returns:
             dict: Analyse complète
         """
-        if refresh:
-            self.refresh()
-
         genuine = self.results["genuine"]
         impostor = self.results["impostor"]
         
@@ -353,15 +354,17 @@ class BiometricMetrics:
     def generate_report(self):
         """
         Génère un rapport complet des métriques
+        Reloads data source each time to ensure real-time updates.
         
         Returns:
             dict: Rapport complet
         """
-        self.refresh()
+        # RELOAD DATA to ensure fresh metrics
+        self.results = self._load_results()
         
         report = {
             "generated_at": datetime.now().isoformat(),
-            "overall": self.analyze_thresholds(refresh=False),
+            "overall": self.analyze_thresholds(),
             "by_modality": {}
         }
         
@@ -371,7 +374,7 @@ class BiometricMetrics:
             modalities.add(r["modality"])
         
         for modality in modalities:
-            report["by_modality"][modality] = self.analyze_thresholds(modality, refresh=False)
+            report["by_modality"][modality] = self.analyze_thresholds(modality)
         
         # Risques et biais
         report["risks"] = self._analyze_risks()
