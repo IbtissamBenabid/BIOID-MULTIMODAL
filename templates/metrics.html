@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,35 +16,35 @@
             --warning-color: #ffc107;
             --danger-color: #dc3545;
         }
-        
+
         body {
             background: #f8f9fa;
             min-height: 100vh;
         }
-        
+
         .navbar {
             background: white !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .main-container {
             padding-top: 100px;
             padding-bottom: 50px;
         }
-        
+
         .metric-card {
             background: white;
             border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
             transition: transform 0.3s;
         }
-        
+
         .metric-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .metric-value {
             font-size: 2.5rem;
             font-weight: bold;
@@ -51,76 +52,99 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
+
         .metric-label {
             color: #666;
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        
+
         .chart-container {
             background: white;
             border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .threshold-slider {
             width: 100%;
         }
-        
+
         .risk-badge {
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.85rem;
         }
-        
-        .risk-high { background: #ffe6e6; color: #dc3545; }
-        .risk-medium { background: #fff3cd; color: #856404; }
-        .risk-low { background: #d4edda; color: #155724; }
-        
+
+        .risk-high {
+            background: #ffe6e6;
+            color: #dc3545;
+        }
+
+        .risk-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+        }
+
         .analysis-section {
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .stat-box {
             background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
             border-radius: 10px;
             padding: 15px;
             text-align: center;
         }
-        
+
         .security-level {
             display: inline-block;
             padding: 8px 20px;
             border-radius: 25px;
             font-weight: bold;
         }
-        
-        .security-high { background: #28a745; color: white; }
-        .security-medium { background: #ffc107; color: #333; }
-        .security-low { background: #dc3545; color: white; }
-        
+
+        .security-high {
+            background: #28a745;
+            color: white;
+        }
+
+        .security-medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .security-low {
+            background: #dc3545;
+            color: white;
+        }
+
         .tab-content {
             padding-top: 20px;
         }
-        
+
         .nav-pills .nav-link.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        
+
         .discussion-card {
             border-left: 4px solid #667eea;
             background: #f8f9ff;
         }
     </style>
 </head>
+
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
@@ -213,9 +237,10 @@
                             <h5><i class="bi bi-graph-down me-2"></i>Courbes FAR/FRR</h5>
                             <canvas id="farFrrChart"></canvas>
                             <div class="mt-3">
-                                <label class="form-label">Seuil de décision: <span id="threshold-display">0.5</span></label>
-                                <input type="range" class="form-range threshold-slider" id="threshold-slider" 
-                                       min="0" max="1" step="0.01" value="0.5" onchange="updateThreshold()">
+                                <label class="form-label">Seuil de décision: <span
+                                        id="threshold-display">0.5</span></label>
+                                <input type="range" class="form-range threshold-slider" id="threshold-slider" min="0"
+                                    max="1" step="0.01" value="0.5" onchange="updateThreshold()">
                             </div>
                         </div>
                     </div>
@@ -293,7 +318,7 @@
         <!-- Discussion: Biais, Robustesse, Limites -->
         <div class="analysis-section mt-4">
             <h4><i class="bi bi-chat-square-text me-2"></i>Discussion et Analyse</h4>
-            
+
             <ul class="nav nav-tabs mt-3" id="discussionTabs">
                 <li class="nav-item">
                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#bias-tab">
@@ -316,7 +341,7 @@
                     </button>
                 </li>
             </ul>
-            
+
             <div class="tab-content mt-3">
                 <!-- Biais -->
                 <div class="tab-pane fade show active" id="bias-tab">
@@ -327,18 +352,23 @@
                                 Les systèmes biométriques peuvent présenter des biais selon:
                             </p>
                             <ul>
-                                <li><strong>Âge:</strong> Les performances peuvent varier avec l'âge (vieillissement facial, changement de voix)</li>
-                                <li><strong>Genre:</strong> Différences potentielles dans la reconnaissance faciale et vocale</li>
-                                <li><strong>Ethnicité:</strong> Certains algorithmes montrent des performances inégales selon les groupes ethniques</li>
-                                <li><strong>Conditions physiques:</strong> Handicaps, maladies affectant la voix ou les empreintes</li>
+                                <li><strong>Âge:</strong> Les performances peuvent varier avec l'âge (vieillissement
+                                    facial, changement de voix)</li>
+                                <li><strong>Genre:</strong> Différences potentielles dans la reconnaissance faciale et
+                                    vocale</li>
+                                <li><strong>Ethnicité:</strong> Certains algorithmes montrent des performances inégales
+                                    selon les groupes ethniques</li>
+                                <li><strong>Conditions physiques:</strong> Handicaps, maladies affectant la voix ou les
+                                    empreintes</li>
                             </ul>
                             <div class="alert alert-warning mt-3">
                                 <i class="bi bi-lightbulb me-2"></i>
-                                <strong>Recommandation:</strong> Tester le système avec un échantillon diversifié et documenter les performances par groupe démographique.
+                                <strong>Recommandation:</strong> Tester le système avec un échantillon diversifié et
+                                documenter les performances par groupe démographique.
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card discussion-card">
                         <div class="card-body">
                             <h5 class="card-title"><i class="bi bi-database me-2"></i>Biais de Données</h5>
@@ -346,25 +376,29 @@
                                 Le biais peut provenir des données d'entraînement:
                             </p>
                             <ul>
-                                <li><strong>Sous-représentation:</strong> Certains groupes moins présents dans les données</li>
-                                <li><strong>Conditions de capture:</strong> Éclairage, angle, qualité d'image variable</li>
+                                <li><strong>Sous-représentation:</strong> Certains groupes moins présents dans les
+                                    données</li>
+                                <li><strong>Conditions de capture:</strong> Éclairage, angle, qualité d'image variable
+                                </li>
                                 <li><strong>Matériel:</strong> Différences entre les capteurs utilisés</li>
                             </ul>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Robustesse -->
                 <div class="tab-pane fade" id="robustness-tab">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="card discussion-card mb-3">
                                 <div class="card-body">
-                                    <h5 class="card-title"><i class="bi bi-shield-fill-check me-2 text-success"></i>Points Forts</h5>
+                                    <h5 class="card-title"><i
+                                            class="bi bi-shield-fill-check me-2 text-success"></i>Points Forts</h5>
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item bg-transparent">
                                             <i class="bi bi-check-circle text-success me-2"></i>
-                                            <strong>Fusion Multimodale:</strong> Combinaison visage + empreinte + voix réduit les erreurs
+                                            <strong>Fusion Multimodale:</strong> Combinaison visage + empreinte + voix
+                                            réduit les erreurs
                                         </li>
                                         <li class="list-group-item bg-transparent">
                                             <i class="bi bi-check-circle text-success me-2"></i>
@@ -385,7 +419,9 @@
                         <div class="col-md-6">
                             <div class="card discussion-card mb-3">
                                 <div class="card-body">
-                                    <h5 class="card-title"><i class="bi bi-shield-exclamation me-2 text-warning"></i>Points à Surveiller</h5>
+                                    <h5 class="card-title"><i
+                                            class="bi bi-shield-exclamation me-2 text-warning"></i>Points à Surveiller
+                                    </h5>
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item bg-transparent">
                                             <i class="bi bi-exclamation-circle text-warning me-2"></i>
@@ -397,7 +433,8 @@
                                         </li>
                                         <li class="list-group-item bg-transparent">
                                             <i class="bi bi-exclamation-circle text-warning me-2"></i>
-                                            <strong>Vieillissement des templates:</strong> Mise à jour périodique nécessaire
+                                            <strong>Vieillissement des templates:</strong> Mise à jour périodique
+                                            nécessaire
                                         </li>
                                         <li class="list-group-item bg-transparent">
                                             <i class="bi bi-exclamation-circle text-warning me-2"></i>
@@ -408,7 +445,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card discussion-card">
                         <div class="card-body">
                             <h5 class="card-title"><i class="bi bi-speedometer2 me-2"></i>Métriques de Robustesse</h5>
@@ -441,12 +478,13 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Limites -->
                 <div class="tab-pane fade" id="limits-tab">
                     <div class="card discussion-card mb-3">
                         <div class="card-body">
-                            <h5 class="card-title"><i class="bi bi-exclamation-octagon me-2 text-danger"></i>Limitations Techniques</h5>
+                            <h5 class="card-title"><i class="bi bi-exclamation-octagon me-2 text-danger"></i>Limitations
+                                Techniques</h5>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
                                     <thead class="table-light">
@@ -487,24 +525,26 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card discussion-card">
                         <div class="card-body">
                             <h5 class="card-title"><i class="bi bi-graph-down me-2"></i>Limites de Performance</h5>
                             <div class="row">
                                 <div class="col-md-6">
                                     <h6>Taille de la Base</h6>
-                                    <p>Complexité O(n) pour la recherche 1:N. Pour les grandes bases (>100k), considérer l'indexation ANN (Approximate Nearest Neighbor).</p>
+                                    <p>Complexité O(n) pour la recherche 1:N. Pour les grandes bases (>100k), considérer
+                                        l'indexation ANN (Approximate Nearest Neighbor).</p>
                                 </div>
                                 <div class="col-md-6">
                                     <h6>Scalabilité</h6>
-                                    <p>Architecture actuelle: mono-serveur. Pour la production, migrer vers une architecture distribuée avec cache Redis.</p>
+                                    <p>Architecture actuelle: mono-serveur. Pour la production, migrer vers une
+                                        architecture distribuée avec cache Redis.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Risques -->
                 <div class="tab-pane fade" id="risks-tab">
                     <div id="risks-container">
@@ -540,7 +580,7 @@
         let distributionChart = null;
         let detChart = null;
         let testDistributionChart = null;
-        
+
         // Fonction helper pour les appels API authentifiés
         async function authenticatedFetch(url, options = {}) {
             const token = localStorage.getItem('bioIdToken') || getCookie('bioIdToken');
@@ -548,7 +588,7 @@
                 window.location.href = '/login';
                 throw new Error('No authentication token');
             }
-            
+
             const response = await fetch(url, {
                 ...options,
                 headers: {
@@ -556,7 +596,7 @@
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             // Si 401, rediriger vers login
             if (response.status === 401) {
                 localStorage.removeItem('bioIdToken');
@@ -564,10 +604,10 @@
                 window.location.href = '/login';
                 throw new Error('Session expired');
             }
-            
+
             return response;
         }
-        
+
         // Helper pour récupérer un cookie
         function getCookie(name) {
             const value = `; ${document.cookie}`;
@@ -575,17 +615,17 @@
             if (parts.length === 2) return parts.pop().split(';').shift();
             return null;
         }
-        
+
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
             loadMetrics();
         });
-        
+
         async function loadMetrics() {
             try {
                 const response = await authenticatedFetch('/api/metrics/report');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     metricsData = data.data;
                     updateDashboard(metricsData);
@@ -597,55 +637,55 @@
                 showNoData();
             }
         }
-        
+
         function showNoData() {
             document.getElementById('eer-value').textContent = 'N/A';
             document.getElementById('far-value').textContent = 'N/A';
             document.getElementById('frr-value').textContent = 'N/A';
             document.getElementById('total-tests').textContent = '0';
         }
-        
+
         function updateDashboard(data) {
             const overall = data.overall || {};
-            
+
             // Métriques principales
-            document.getElementById('eer-value').textContent = 
+            document.getElementById('eer-value').textContent =
                 overall.eer !== null ? overall.eer.toFixed(2) + '%' : 'N/A';
-            
+
             if (overall.thresholds_analysis && overall.thresholds_analysis.length > 0) {
                 const t05 = overall.thresholds_analysis.find(t => t.threshold === 0.5) || overall.thresholds_analysis[2];
                 document.getElementById('far-value').textContent = (t05?.far || 0).toFixed(2) + '%';
                 document.getElementById('frr-value').textContent = (t05?.frr || 0).toFixed(2) + '%';
             }
-            
-            const sampleSize = overall.sample_size || {genuine: 0, impostor: 0};
-            document.getElementById('total-tests').textContent = 
+
+            const sampleSize = overall.sample_size || { genuine: 0, impostor: 0 };
+            document.getElementById('total-tests').textContent =
                 (sampleSize.genuine || 0) + (sampleSize.impostor || 0);
-            
+
             // Graphiques
             renderFarFrrChart(data);
             renderDistributionChart(data);
             renderDetChart(data);
             renderTestDistributionChart(data);
-            
+
             // Tableau des seuils
             updateThresholdsTable(overall.thresholds_analysis || []);
-            
+
             // Risques
             updateRisks(data.risks || []);
-            
+
             // Métriques par modalité
             updateModalityMetrics(data.by_modality || {});
         }
-        
+
         function renderFarFrrChart(data) {
             const ctx = document.getElementById('farFrrChart').getContext('2d');
-            
+
             // Générer les données pour les courbes
             const thresholds = [];
             const fars = [];
             const frrs = [];
-            
+
             for (let t = 0; t <= 1; t += 0.05) {
                 thresholds.push(t.toFixed(2));
                 // Simuler les valeurs basées sur les données
@@ -654,9 +694,9 @@
                 fars.push(far);
                 frrs.push(frr);
             }
-            
+
             if (farFrrChart) farFrrChart.destroy();
-            
+
             farFrrChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -723,15 +763,15 @@
                 }
             });
         }
-        
+
         function renderDistributionChart(data) {
             const ctx = document.getElementById('distributionChart').getContext('2d');
-            
+
             // Simuler des distributions gaussiennes
             const labels = [];
             const genuineData = [];
             const impostorData = [];
-            
+
             for (let x = 0; x <= 1; x += 0.05) {
                 labels.push(x.toFixed(2));
                 // Distribution genuine (centrée sur des valeurs basses)
@@ -739,9 +779,9 @@
                 // Distribution impostor (centrée sur des valeurs hautes)
                 impostorData.push(Math.exp(-Math.pow((x - 0.7) / 0.2, 2)) * 80);
             }
-            
+
             if (distributionChart) distributionChart.destroy();
-            
+
             distributionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -791,20 +831,20 @@
                 }
             });
         }
-        
+
         function renderDetChart(data) {
             const ctx = document.getElementById('detChart').getContext('2d');
-            
+
             // Courbe DET (FAR vs FRR)
             const detData = [];
             for (let i = 0; i <= 20; i++) {
-                const far = Math.pow(10, -i/5);
-                const frr = Math.pow(10, -2 + i/10);
-                detData.push({x: far * 100, y: frr * 100});
+                const far = Math.pow(10, -i / 5);
+                const frr = Math.pow(10, -2 + i / 10);
+                detData.push({ x: far * 100, y: frr * 100 });
             }
-            
+
             if (detChart) detChart.destroy();
-            
+
             detChart = new Chart(ctx, {
                 type: 'scatter',
                 data: {
@@ -844,14 +884,14 @@
                 }
             });
         }
-        
+
         function renderTestDistributionChart(data) {
             const ctx = document.getElementById('testDistributionChart').getContext('2d');
-            
-            const sampleSize = data.overall?.sample_size || {genuine: 0, impostor: 0};
-            
+
+            const sampleSize = data.overall?.sample_size || { genuine: 0, impostor: 0 };
+
             if (testDistributionChart) testDistributionChart.destroy();
-            
+
             testDistributionChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -876,11 +916,11 @@
                 }
             });
         }
-        
+
         function updateThresholdsTable(thresholds) {
             const tbody = document.querySelector('#thresholds-table tbody');
             tbody.innerHTML = '';
-            
+
             const usageMap = {
                 0.3: 'Haute sécurité (banques, gouvernement)',
                 0.4: 'Sécurité standard (entreprises)',
@@ -888,11 +928,11 @@
                 0.6: 'Confort utilisateur (moins de rejets)',
                 0.7: 'Accessibilité maximale'
             };
-            
+
             thresholds.forEach(t => {
-                const securityClass = t.security_level === 'high' ? 'security-high' : 
-                                     t.security_level === 'medium' ? 'security-medium' : 'security-low';
-                
+                const securityClass = t.security_level === 'high' ? 'security-high' :
+                    t.security_level === 'medium' ? 'security-medium' : 'security-low';
+
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${t.threshold}</strong></td>
@@ -903,7 +943,7 @@
                     </tr>
                 `;
             });
-            
+
             if (thresholds.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -914,10 +954,10 @@
                 `;
             }
         }
-        
+
         function updateRisks(risks) {
             const container = document.getElementById('risks-container');
-            
+
             if (risks.length === 0) {
                 container.innerHTML = `
                     <div class="alert alert-success">
@@ -927,7 +967,7 @@
                 `;
                 return;
             }
-            
+
             container.innerHTML = risks.map(risk => `
                 <div class="alert alert-${risk.severity === 'high' ? 'danger' : risk.severity === 'medium' ? 'warning' : 'info'} mb-2">
                     <div class="d-flex align-items-center">
@@ -940,12 +980,12 @@
                 </div>
             `).join('');
         }
-        
+
         function updateModalityMetrics(byModality) {
             ['face', 'fingerprint', 'voice'].forEach(modality => {
                 const container = document.getElementById(`${modality}-metrics-content`);
                 const data = byModality[modality];
-                
+
                 if (!data || data.error) {
                     container.innerHTML = `
                         <div class="alert alert-secondary">
@@ -956,7 +996,7 @@
                     `;
                     return;
                 }
-                
+
                 container.innerHTML = `
                     <div class="row">
                         <div class="col-md-4">
@@ -1004,24 +1044,24 @@
                 `;
             });
         }
-        
+
         function updateThreshold() {
             const threshold = document.getElementById('threshold-slider').value;
             document.getElementById('threshold-display').textContent = threshold;
-            
+
             // Recalculer FAR/FRR pour ce seuil
             // (nécessiterait un appel API)
         }
-        
+
         async function generateTestData() {
             if (!confirm('Générer des données de test simulées? Ceci est utile pour démonstration.')) return;
-            
+
             try {
                 const response = await authenticatedFetch('/api/metrics/generate_test_data', {
                     method: 'POST'
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     alert('Données de test générées avec succès!');
                     loadMetrics();
@@ -1032,13 +1072,13 @@
                 alert('Erreur: ' + err.message);
             }
         }
-        
+
         async function exportReport() {
             try {
                 const response = await authenticatedFetch('/api/metrics/report');
                 const data = await response.json();
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1048,11 +1088,11 @@
                 alert('Erreur export: ' + err.message);
             }
         }
-        
+
         function refreshMetrics() {
             loadMetrics();
         }
-        
+
         function logout() {
             localStorage.removeItem('bioIdToken');
             document.cookie = 'bioIdToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -1060,4 +1100,5 @@
         }
     </script>
 </body>
+
 </html>
