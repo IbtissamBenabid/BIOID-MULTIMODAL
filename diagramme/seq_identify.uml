@@ -1,0 +1,39 @@
+@startuml
+title Sequence - Identify (1:N Identification)
+actor Operator
+participant "Frontend (Browser)" as UI
+participant "Nginx / Reverse Proxy" as NGINX
+participant "Flask App (app.py)" as APP
+participant "FaceCapture / FingerprintProcessor" as PROBE
+participant "BioIDGenerator" as BIOID
+participant "DatabaseManager" as DBM
+participant "AuditLogger" as AUDIT
+participant "SecurityManager" as SEC
+
+Operator -> UI : Open Identify page
+UI -> APP : POST /api/identify {face_encoding or fingerprint_features}
+APP -> PROBE : (if face) ensure encoding or (if file) extract features
+PROBE --> APP : probe_features
+APP -> BIOID : find_by_biometrics(probe_features)
+BIOID -> DBM : load beneficiaries (or query index)
+DBM --> BIOID : candidates (records)
+BIOID -> SEC : (if encrypted) decrypt templates
+SEC --> BIOID : templates
+BIOID -> BIOID : compute distances/similarities (face: L2, fp: cosine)
+alt match found
+  BIOID --> APP : {found: true, bio_id, name, confidence}
+  APP -> AUDIT : log_identification(query_hash, found_bio_id, confidence)
+  AUDIT --> APP : log_id
+  APP --> UI : 200 OK {found:true, bio_id, name}
+else no match
+  BIOID --> APP : {found: false}
+  APP -> AUDIT : log_identification(query_hash, null, 0)
+  AUDIT --> APP : log_id
+  APP --> UI : 200 OK {found:false}
+end
+
+note over BIOID
+  Optimization: for large DB use ANN index (FAISS, HNSW) to avoid O(N) scans
+end note
+
+@enduml

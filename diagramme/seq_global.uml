@@ -1,0 +1,55 @@
+@startuml
+title Sequence - Global overview (Login, Enroll, Verify, Identify, Audit)
+actor User
+participant "Frontend" as UI
+participant "Nginx" as NGINX
+participant "Flask App" as APP
+participant "RBAC / Auth" as RBAC
+participant "BioIDGenerator" as BIOID
+participant "DatabaseManager" as DBM
+participant "AuditLogger" as AUDIT
+participant "BiometricMetrics" as METRICS
+
+User -> UI : Login (username/password)
+UI -> APP : POST /api/auth/login
+APP -> RBAC : authenticate_user()
+RBAC -> DBM : verify credentials
+DBM --> RBAC : user record
+RBAC --> APP : access_token, refresh_token
+APP --> UI : 200 OK {tokens}
+APP -> AUDIT : log_event(LOGIN)
+AUDIT --> APP : ok
+
+alt Enroll flow
+  UI -> APP : POST /api/register {name, features, consent}
+  APP -> BIOID : register_beneficiary(...)
+  BIOID -> DBM : persist
+  DBM --> BIOID : ok
+  BIOID --> APP : response
+  APP -> AUDIT : log_enrollment
+  APP --> UI : 201 Created
+end
+
+alt Verify flow
+  UI -> APP : POST /api/verify {bio_id, probe_features}
+  APP -> BIOID : verify_identity(bio_id, probe_features)
+  BIOID --> APP : verification result
+  APP -> METRICS : record_verification(...)
+  APP -> AUDIT : log_verification
+  APP --> UI : 200 OK {verified, scores}
+end
+
+alt Identify flow
+  UI -> APP : POST /api/identify {probe_features}
+  APP -> BIOID : find_by_biometrics(...)
+  BIOID --> APP : result (found / not found)
+  APP -> AUDIT : log_identification
+  APP --> UI : 200 OK
+end
+
+' Audit ingestion for metrics (async/background)
+AUDIT -> METRICS : write logs (data/audit)
+METRICS -> METRICS : ingest logs, compute FAR/FRR/EER
+METRICS --> DBM : (optional) persist reports
+
+@enduml

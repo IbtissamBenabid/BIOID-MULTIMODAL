@@ -1,0 +1,41 @@
+@startuml
+title Sequence - Enroll (Enrôlement)
+actor Operator
+participant "Frontend (Browser)" as UI
+participant "Nginx / Reverse Proxy" as NGINX
+participant "Flask App (app.py)" as APP
+participant "FaceCapture" as FACE
+participant "FingerprintProcessor" as FP
+participant "VoiceProcessor" as VOICE
+participant "BioIDGenerator" as BIOID
+participant "SecurityManager" as SEC
+participant "DatabaseManager" as DBM
+participant "AuditLogger" as AUDIT
+participant "ComplianceManager" as COMPL
+
+Operator -> UI : Open Enroll page
+UI -> APP : POST /api/capture_face (image)
+APP -> FACE : detect & encode (128D)
+FACE --> APP : face_encoding
+UI -> APP : POST /api/process_fingerprint (file)
+APP -> FP : preprocess & extract_features()
+FP --> APP : fingerprint_features
+opt voice provided
+  UI -> APP : POST /api/process_voice (wav)
+  APP -> VOICE : extract_features()
+  VOICE --> APP : voice_features
+end
+UI -> APP : POST /api/register {name, face_encoding, fingerprint_features, voice_features, consent}
+APP -> COMPL : validate & record consent
+COMPL --> APP : consent_id
+APP -> BIOID : register_beneficiary(name, face_enc, fp_feat, metadata)
+BIOID -> SEC : generate_biometric_hash(face, fp)
+SEC --> BIOID : bio_hash
+BIOID -> DBM : persist beneficiary (encrypted templates optional)
+DBM --> BIOID : persist OK / id
+BIOID --> APP : beneficiary
+APP -> AUDIT : log_enrollment(operator_id, bio_id, modalities)
+AUDIT --> APP : log_id
+APP --> UI : 201 Created {bio_id, message}
+
+@enduml

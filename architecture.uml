@@ -1,0 +1,71 @@
+@startuml
+' Architecture globale BioID - composant et déploiement
+skinparam dpi 150
+skinparam componentStyle rectangle
+
+title BioID - Architecture globale
+
+node "Reverse Proxy\n(Nginx)" as NGINX <<External>>
+
+node "Docker Host" as HOST {
+  folder "Containers" {
+    component "bioid-app (Flask)" as APP <<Service>>
+    component "nginx (optionnel)" as NGINX_C <<External>>
+  }
+}
+
+package "Modules (processus applicatif)" {
+  component "FaceCapture" as FACE <<Module>>
+  component "FingerprintProcessor" as FP <<Module>>
+  component "VoiceProcessor (opt)" as VOICE <<Module>>
+  component "BioIDGenerator" as BIOID <<Module>>
+  component "SecurityManager" as SEC <<Module>>
+  component "RBAC / Auth" as RBAC <<Module>>
+  component "AuditLogger" as AUDIT <<Module>>
+  component "BiometricMetrics" as METRICS <<Module>>
+  component "ComplianceManager" as COMPLIANCE <<Module>>
+  component "RiskAssessment" as RISK <<Module>>
+  component "UseCaseRepository" as USECASE <<Module>>
+  component "DatabaseManager (PG / JSON)" as DBM <<Module>>
+}
+
+database "Data volume (data/)" as DATADIR <<Storage>> {
+  folder "faces/" as FACES
+  folder "fingerprints/" as FPF
+  folder "audit/" as AUD
+  folder "database/ (beneficiaries.json)" as JSONDB
+  folder "metrics/" as METRICSF
+  folder "keys/" as KEYS
+  folder "compliance/" as COMPL
+}
+
+database "PostgreSQL (optional)" as PG <<External>>
+
+' Interactions principales
+NGINX --> APP : HTTP/HTTPS
+APP --> RBAC : auth, tokens
+APP --> FACE : capture / encode
+APP --> FP : process fingerprint
+APP --> VOICE : process voice
+APP --> BIOID : register / verify / identify
+BIOID --> SEC : hash / encrypt / pseudonymize
+BIOID --> DBM : persist / query
+DBM --> PG : SQL (production)
+DBM --> JSONDB : read/write (local)
+APP --> AUDIT : log events
+AUDIT --> DATADIR : save audit json
+METRICS --> AUDIT : ingest logs
+METRICS --> METRICSF : save verification_results.json
+APP --> COMPLIANCE : record consent / withdraw
+APP --> RISK : simulate / assess
+APP --> USECASE : export docs
+
+' Legend
+legend right
+  == Components ==
+  rectangle = Module/Service
+  cylinder = Storage (local / remote)
+  cloud = External
+endlegend
+
+@enduml
