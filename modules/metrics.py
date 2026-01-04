@@ -36,26 +36,29 @@ class BiometricMetrics:
         """Charge les résultats de vérification"""
         os.makedirs(os.path.dirname(self.results_file), exist_ok=True)
 
-        # If explicit file exists, load it
+        # Initialize with empty structure
+        data = {"genuine": [], "impostor": []}
+
+        # 1. Load from explicit results file (e.g. generated test data)
         if os.path.exists(self.results_file):
             try:
                 with open(self.results_file, 'r') as f:
-                    data = json.load(f)
-                    if isinstance(data, dict) and ("genuine" in data or "impostor" in data):
-                        return data
+                    file_data = json.load(f)
+                    if isinstance(file_data, dict) and ("genuine" in file_data or "impostor" in file_data):
+                        data = file_data
             except Exception:
-                # Fall through to attempt ingestion from audit logs
                 pass
 
-        # Try to ingest from audit logs if metrics file not present or invalid
-        ingested = self._ingest_from_audit_logs()
-        if ingested:
-            # Save ingested results for future runs
-            self._save_results()
-            return self.results
+        # 2. Ingest from audit logs (live data) and merge
+        # We pass the current data to append to it
+        self.results = data
+        self._ingest_from_audit_logs()
+        
+        return self.results
 
-        # Fallback: empty structure
-        return {"genuine": [], "impostor": []}
+    def refresh(self):
+        """Rafraîchit les métriques depuis les logs"""
+        self.results = self._load_results()
 
     def _ingest_from_audit_logs(self) -> bool:
         """Ingest verification events from audit logs to populate metrics.
@@ -69,8 +72,16 @@ class BiometricMetrics:
             return False
 
         any_found = False
-        # ensure results structure
-        self.results = {"genuine": [], "impostor": []}
+        # Note: self.results is already initialized, we append to it
+        
+        # Build set of existing signatures to avoid duplicates
+        # Signature: (timestamp, modality, score)
+        existing_signatures = set()
+        for category in ["genuine", "impostor"]:
+            for r in self.results.get(category, []):
+                # Use a tuple for hashability
+                sig = (r.get("timestamp"), r.get("modality"), r.get("score"))
+                existing_signatures.add(sig)
 
         for fname in sorted(os.listdir(audit_dir)):
             if not fname.endswith('.json'):
@@ -115,9 +126,16 @@ class BiometricMetrics:
                             else:
                                 # assume similarity where higher is better -> convert
                                 score = max(0.0, min(1.0, 1.0 - num))
+                            
+                            score = float(score)
+                            
+                            # Check for duplicate
+                            sig = (timestamp, modality, score)
+                            if sig in existing_signatures:
+                                continue
 
                             record = {
-                                "score": float(score),
+                                "score": score,
                                 "modality": modality,
                                 "timestamp": timestamp
                             }
@@ -126,7 +144,8 @@ class BiometricMetrics:
                                 self.results['genuine'].append(record)
                             else:
                                 self.results['impostor'].append(record)
-
+                            
+                            existing_signatures.add(sig)
                             any_found = True
 
                 except Exception:
@@ -135,6 +154,9 @@ class BiometricMetrics:
 
         if any_found:
             print(f"[metrics] Ingested metrics from audit logs in {audit_dir}")
+            # Save updated results to cache them
+            self._save_results()
+            
         return any_found
     
     def _save_results(self):
@@ -253,16 +275,20 @@ class BiometricMetrics:
         except:
             return None, None
     
-    def analyze_thresholds(self, modality=None):
+    def analyze_thresholds(self, modality=None, refresh=True):
         """
         Analyse des seuils et recommandations
         
         Args:
             modality: Filtrer par modalité
+            refresh: Rafraîchir les données avant analyse (défaut: True)
             
         Returns:
             dict: Analyse complète
         """
+        if refresh:
+            self.refresh()
+
         genuine = self.results["genuine"]
         impostor = self.results["impostor"]
         
@@ -331,9 +357,11 @@ class BiometricMetrics:
         Returns:
             dict: Rapport complet
         """
+        self.refresh()
+        
         report = {
             "generated_at": datetime.now().isoformat(),
-            "overall": self.analyze_thresholds(),
+            "overall": self.analyze_thresholds(refresh=False),
             "by_modality": {}
         }
         
@@ -343,7 +371,7 @@ class BiometricMetrics:
             modalities.add(r["modality"])
         
         for modality in modalities:
-            report["by_modality"][modality] = self.analyze_thresholds(modality)
+            report["by_modality"][modality] = self.analyze_thresholds(modality, refresh=False)
         
         # Risques et biais
         report["risks"] = self._analyze_risks()

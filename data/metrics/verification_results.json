@@ -1,0 +1,116 @@
+{
+  "genuine": [
+    {
+      "score": 0.21273400785981023,
+      "modality": "face",
+      "timestamp": "2026-01-03T15:48:05.263234"
+    },
+    {
+      "score": 0.0538869145025338,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T15:48:05.263234"
+    },
+    {
+      "score": 0.21273400785981023,
+      "modality": "face",
+      "timestamp": "2026-01-03T15:48:17.736666"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T15:48:17.736666"
+    },
+    {
+      "score": 0.42728923675621444,
+      "modality": "face",
+      "timestamp": "2026-01-03T15:48:25.284448"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T15:48:25.284448"
+    },
+    {
+      "score": 0.29030071485315834,
+      "modality": "face",
+      "timestamp": "2026-01-03T16:05:34.033274"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T16:05:34.033274"
+    },
+    {
+      "score": 0.2373377395735008,
+      "modality": "face",
+      "timestamp": "2026-01-03T16:13:37.434355"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T16:13:37.434355"
+    },
+    {
+      "score": 0.27693621004600455,
+      "modality": "face",
+      "timestamp": "2026-01-03T16:22:56.449793"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T16:22:56.449793"
+    },
+    {
+      "score": 0.2890622662354102,
+      "modality": "face",
+      "timestamp": "2026-01-03T20:21:04.210988"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T20:21:04.210988"
+    },
+    {
+      "score": 0.2890622662354102,
+      "modality": "face",
+      "timestamp": "2026-01-03T20:21:09.766933"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T20:21:09.766933"
+    },
+    {
+      "score": 0.2538213911514141,
+      "modality": "face",
+      "timestamp": "2026-01-03T20:27:33.485968"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T20:27:33.485968"
+    },
+    {
+      "score": 0.2538213911514141,
+      "modality": "face",
+      "timestamp": "2026-01-03T20:27:37.427038"
+    },
+    {
+      "score": 0.0,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T20:27:37.427038"
+    }
+  ],
+  "impostor": [
+    {
+      "score": 0.42728923675621444,
+      "modality": "face",
+      "timestamp": "2026-01-03T15:48:44.030962"
+    },
+    {
+      "score": 0.32421139147012423,
+      "modality": "fingerprint",
+      "timestamp": "2026-01-03T15:48:44.030962"
+    }
+  ]
+}
