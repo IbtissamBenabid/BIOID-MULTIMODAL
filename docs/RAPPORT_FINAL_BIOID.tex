@@ -1,0 +1,1490 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit,backgrounds}
+
+% ============================================================================
+% CONFIGURATION
+% ============================================================================
+\geometry{margin=2.5cm}
+
+% Couleurs personnalisées
+\definecolor{bioid-blue}{RGB}{0,102,204}
+\definecolor{bioid-green}{RGB}{0,153,76}
+\definecolor{bioid-red}{RGB}{204,0,0}
+\definecolor{bioid-orange}{RGB}{255,153,0}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{200,200,200}
+
+% Configuration des liens
+\hypersetup{
+    colorlinks=true,
+    linkcolor=bioid-blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={Rapport Final BioID},
+    pdfauthor={Équipe BioID},
+}
+
+% Configuration des listings
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{bioid-green},
+    frame=single,
+    framerule=0.5pt,
+    rulecolor=\color{codeframe},
+    keepspaces=true,
+    keywordstyle=\color{bioid-blue}\bfseries,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{gray},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    stringstyle=\color{bioid-red},
+    tabsize=2,
+    language=Python,
+}
+
+% En-têtes et pieds de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{BioID v2.0}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Format des chapitres
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries\color{bioid-blue}}
+{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ============================================================================
+% PAGE DE TITRE
+% ============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    
+    {\scshape\Large Université Hassan II de Casablanca \par}
+    \vspace{0.3cm}
+    {\scshape\large École Normale Supérieure de l'Enseignement Technique \par}
+    {\scshape\large ENSET Mohammadia \par}
+    \vspace{0.3cm}
+    {\scshape\normalsize Département Mathématiques et Informatique \par}
+    
+    \vspace{1cm}
+    
+    \rule{\textwidth}{1.5pt}\par
+    \vspace{0.5cm}
+    {\huge\bfseries\color{bioid-blue} Rapport Final\par}
+    \vspace{0.3cm}
+    {\Large\bfseries Système BioID\par}
+    \vspace{0.3cm}
+    {\large Système d'Identification Biométrique Multimodal\\pour l'Aide Sociale\par}
+    \rule{\textwidth}{1.5pt}\par
+    
+    \vspace{0.8cm}
+    
+    {\large\textbf{Module : Confiance Numérique}\par}
+    
+    \vspace{1.5cm}
+    
+    \begin{tcolorbox}[colback=bioid-blue!5,colframe=bioid-blue,width=0.85\textwidth]
+        \centering
+        \textbf{Réalisé par :}\\[0.4cm]
+        \begin{tabular}{ll}
+            \textbullet~\textbf{BENABID} Ibtissam & \textbullet~\textbf{BAAAZZA} Salah \\
+            \textbullet~\textbf{BELKHEL} Mehdi & \textbullet~\textbf{COMBARI} Marius \\
+        \end{tabular}
+    \end{tcolorbox}
+    
+    \vspace{1.5cm}
+    
+    \begin{tcolorbox}[colback=gray!5,colframe=gray!50,width=0.6\textwidth]
+        \centering
+        \textbf{Document Technique Détaillé}\\[0.2cm]
+        \begin{tabular}{ll}
+            \textbf{Version :} & 2.0 \\
+            \textbf{Date :} & Janvier 2026 \\
+        \end{tabular}
+    \end{tcolorbox}
+    
+    \vfill
+    
+    {\large\textbf{Année Académique 2025 - 2026}\par}
+\end{titlepage}
+
+% ============================================================================
+% TABLE DES MATIÈRES
+% ============================================================================
+\tableofcontents
+\newpage
+
+% ============================================================================
+% LISTE DES FIGURES ET TABLEAUX
+% ============================================================================
+\listoffigures
+\listoftables
+\newpage
+
+% ============================================================================
+% INTRODUCTION
+% ============================================================================
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+
+Dans un contexte mondial marqué par des crises humanitaires croissantes, l'identification fiable des bénéficiaires d'aide sociale représente un défi majeur. Les réfugiés et personnes sans papiers, souvent dépourvus de documents d'identité officiels, se retrouvent dans l'impossibilité de prouver leur identité pour accéder aux services essentiels.
+
+La biométrie multimodale offre une solution prometteuse à cette problématique en permettant une identification unique et non falsifiable basée sur les caractéristiques physiques intrinsèques de chaque individu. Le projet \textbf{BioID} s'inscrit dans cette démarche en proposant un système d'identification combinant trois modalités biométriques : la reconnaissance faciale, les empreintes digitales et la reconnaissance vocale.
+
+Ce rapport présente une analyse complète du système BioID, couvrant son architecture technique, son pipeline biométrique, ses mécanismes de sécurité et de confiance numérique, ainsi que son évaluation selon les standards biométriques internationaux.
+
+\section*{Cas d'Usage Principal}
+
+Le système BioID est conçu pour répondre au scénario suivant :
+
+\begin{tcolorbox}[colback=bioid-blue!5,colframe=bioid-blue,title=Cas d'Usage : Distribution d'Aide Humanitaire]
+\textbf{Contexte :} Un centre de distribution d'aide sociale doit identifier de manière fiable les bénéficiaires pour éviter les fraudes et garantir une distribution équitable.
+
+\textbf{Acteurs :}
+\begin{itemize}
+    \item \textbf{Agent d'enrôlement} : Opérateur terrain qui enregistre les nouveaux bénéficiaires
+    \item \textbf{Bénéficiaire} : Personne éligible à l'aide sociale
+    \item \textbf{Administrateur} : Gestionnaire du système
+\end{itemize}
+
+\textbf{Scénario principal :}
+\begin{enumerate}
+    \item L'agent se connecte au système avec ses identifiants sécurisés
+    \item Pour un \textbf{nouvel enrôlement} :
+    \begin{itemize}
+        \item Capture de 5 images faciales via webcam
+        \item Numérisation de l'empreinte digitale
+        \item Enregistrement vocal (optionnel)
+        \item Recueil du consentement RGPD
+        \item Génération d'un identifiant unique (BIO-XXXXXXXX-XXXX)
+    \end{itemize}
+    \item Pour une \textbf{vérification} (lors de la distribution) :
+    \begin{itemize}
+        \item Le bénéficiaire présente son identifiant BioID
+        \item Capture biométrique de vérification
+        \item Comparaison avec les données enregistrées
+        \item Validation ou rejet avec score de confiance
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Garanties :}
+\begin{itemize}
+    \item Unicité de l'identification (anti-doublon)
+    \item Traçabilité complète des opérations
+    \item Protection des données personnelles (RGPD)
+    \item Audit en temps réel
+\end{itemize}
+\end{tcolorbox}
+
+\section*{Structure du Rapport}
+
+Ce rapport est organisé en six chapitres principaux :
+
+\begin{enumerate}
+    \item \textbf{Résumé Exécutif} : Vue d'ensemble du projet et de ses objectifs
+    \item \textbf{Architecture et Documentation Technique} : Description détaillée de l'architecture système, des composants et des API
+    \item \textbf{Pipeline Biométrique} : Algorithmes de reconnaissance faciale, traitement des empreintes et fusion multimodale
+    \item \textbf{Sécurité et Confiance Numérique} : Mécanismes de sécurité, conformité RGPD et analyse des risques
+    \item \textbf{Évaluation Biométrique} : Métriques de performance (FAR, FRR, EER) et analyse des biais
+    \item \textbf{Limites et Perspectives} : Limitations actuelles et feuille de route d'amélioration
+\end{enumerate}
+
+\newpage
+
+% ============================================================================
+% CHAPITRE 1 : RÉSUMÉ EXÉCUTIF
+% ============================================================================
+\chapter{Résumé Exécutif}
+
+\section{Contexte du Projet}
+
+Le système \textbf{BioID} est une solution d'identification biométrique multimodale conçue pour l'identification sécurisée des bénéficiaires d'aide sociale (réfugiés, personnes sans papiers). Le système garantit :
+
+\begin{itemize}
+    \item \textbf{Unicité de l'identification} via fusion biométrique
+    \item \textbf{Conformité légale} avec le RGPD et la Loi marocaine 09-08
+    \item \textbf{Traçabilité complète} des opérations
+\end{itemize}
+
+\section{Objectifs Principaux}
+
+\begin{table}[H]
+    \centering
+    \caption{Objectifs du projet BioID}
+    \label{tab:objectifs}
+    \begin{tabular}{|l|p{7cm}|c|}
+        \hline
+        \textbf{Objectif} & \textbf{Description} & \textbf{Statut} \\
+        \hline
+        Identification fiable & Reconnaissance multimodale (visage, empreinte, voix) & \textcolor{bioid-green}{\checkmark} \\
+        \hline
+        Sécurité des données & Chiffrement AES-256, RBAC & \textcolor{bioid-green}{\checkmark} \\
+        \hline
+        Conformité RGPD & Consentement, droit à l'effacement & \textcolor{bioid-green}{\checkmark} \\
+        \hline
+        Audit complet & Journalisation horodatée & \textcolor{bioid-green}{\checkmark} \\
+        \hline
+        Métriques biométriques & FAR/FRR/EER & \textcolor{bioid-green}{\checkmark} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 2 : ARCHITECTURE ET DOCUMENTATION TECHNIQUE
+% ============================================================================
+\chapter{Architecture et Documentation Technique}
+
+\section{Architecture Globale du Système}
+
+\subsection{Vue d'Ensemble}
+
+L'architecture du système BioID suit un modèle en couches avec une séparation claire des responsabilités :
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.6cm,
+        box/.style={rectangle, draw, rounded corners, minimum width=3.5cm, minimum height=0.8cm, align=center},
+        module/.style={rectangle, draw, fill=bioid-blue!10, minimum width=2.8cm, minimum height=0.55cm, align=center, font=\scriptsize},
+        storage/.style={cylinder, draw, shape border rotate=90, aspect=0.3, minimum width=1.8cm, minimum height=0.9cm, align=center, font=\scriptsize}
+    ]
+        % Couche Client
+        \node[box, fill=yellow!20] (client) {Client (Browser)};
+        
+        % Couche Proxy
+        \node[box, fill=orange!20, below=of client] (nginx) {Nginx (Reverse Proxy)};
+        
+        % Couche Application
+        \node[box, fill=green!20, below=of nginx] (flask) {Flask App (API REST)};
+        
+        % Point central pour les modules
+        \node[below=1.8cm of flask] (center) {};
+        
+        % Colonne Biométrie (gauche)
+        \node[module, left=2.2cm of center, yshift=1cm] (bio1) {FaceCapture};
+        \node[module, below=0.25cm of bio1] (bio2) {FingerprintProcessor};
+        \node[module, below=0.25cm of bio2] (bio3) {VoiceProcessor};
+        \node[module, below=0.25cm of bio3] (bio4) {BioIDGenerator};
+        \node[module, below=0.25cm of bio4] (bio5) {BiometricMetrics};
+        
+        % Colonne Sécurité/Gestion (droite)
+        \node[module, right=2.2cm of center, yshift=1cm] (sec1) {SecurityManager};
+        \node[module, below=0.25cm of sec1] (sec2) {RBACManager};
+        \node[module, below=0.25cm of sec2] (sec3) {AuditLogger};
+        \node[module, below=0.25cm of sec3] (sec4) {ComplianceManager};
+        \node[module, below=0.25cm of sec4] (sec5) {RiskAssessment};
+        
+        % Module central
+        \node[module, fill=green!20, below=0.5cm of center] (dbm) {DatabaseManager};
+        
+        % Cadre modules
+        \begin{scope}[on background layer]
+            \node[draw, dashed, fit=(bio1)(bio5)(sec5)(dbm), inner sep=0.4cm, label=above:{\textbf{Modules Métier}}] {};
+        \end{scope}
+        
+        % Stockage
+        \node[storage, fill=blue!10, below=4.8cm of flask, xshift=-3cm] (pg) {PostgreSQL\\(production)};
+        \node[storage, fill=blue!10, below=4.8cm of flask] (json) {JSON/Files\\(data/)};
+        \node[storage, fill=blue!10, below=4.8cm of flask, xshift=3cm] (audit) {Audit Logs\\(audit/)};
+        
+        % Flèches principales
+        \draw[->, thick] (client) -- (nginx);
+        \draw[->, thick] (nginx) -- (flask);
+        \draw[->, thick] (flask) -- (bio1.north);
+        \draw[->, thick] (flask) -- (sec1.north);
+        \draw[->, thick] (dbm) -- (pg);
+        \draw[->, thick] (dbm) -- (json);
+        \draw[->, thick] (sec3) -- (audit);
+        
+    \end{tikzpicture}
+    \caption{Architecture globale du système BioID}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Composants Principaux}
+
+\begin{table}[H]
+    \centering
+    \caption{Composants technologiques}
+    \label{tab:composants}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Composant} & \textbf{Rôle} & \textbf{Technologie} \\
+        \hline
+        Flask App & API REST principale & Python 3.11, Flask 3.0 \\
+        \hline
+        Nginx & Reverse proxy, HTTPS & Nginx latest \\
+        \hline
+        PostgreSQL & Base de données production & PostgreSQL 14+ \\
+        \hline
+        Docker & Conteneurisation & Docker, Compose \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Structure du Projet}
+
+\begin{lstlisting}[caption={Structure des fichiers du projet},label={lst:structure},language={}]
+bioid/
+|-- app.py                      # Application Flask principale
+|-- config.py                   # Configuration centralisee
+|-- Dockerfile                  # Image Docker production
+|-- docker-compose.yml          # Orchestration containers
+|-- modules/                    # Modules metier
+|   |-- face_capture.py         # Capture et encodage facial
+|   |-- fingerprint_processor.py # Traitement empreintes
+|   |-- voice_processor.py      # Traitement vocal
+|   |-- bioid_generator.py      # Generation UUID
+|   |-- security.py             # Chiffrement
+|   |-- audit.py                # Journalisation
+|   |-- rbac.py                 # Gestion roles
+|   |-- metrics.py              # Metriques FAR/FRR/EER
+|   |-- compliance.py           # Conformite RGPD
+|   +-- risk_assessment.py      # Analyse des risques
+|-- templates/                  # Templates HTML (Jinja2)
+|-- data/                       # Donnees persistantes
+|   |-- faces/                  # Images faciales
+|   |-- fingerprints/           # Images empreintes
+|   |-- database/               # Base JSON locale
+|   |-- audit/                  # Logs d'audit
+|   +-- keys/                   # Cles de chiffrement
++-- docs/                       # Documentation
+\end{lstlisting}
+
+\section{Diagrammes de Séquence}
+
+\subsection{Processus d'Enrôlement}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        actor/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.6cm, fill=yellow!20},
+        component/.style={rectangle, draw, minimum width=1.5cm, minimum height=0.6cm, fill=blue!10},
+        arrow/.style={->, >=stealth},
+        note/.style={rectangle, draw, dashed, fill=gray!10, font=\scriptsize}
+    ]
+        % Acteurs et composants
+        \node[actor] (op) at (0,0) {Operator};
+        \node[component] (ui) at (2.5,0) {Frontend};
+        \node[component] (api) at (5,0) {Flask API};
+        \node[component] (bio) at (7.5,0) {Biometric};
+        \node[component] (db) at (10,0) {Database};
+        
+        % Lignes de vie
+        \draw[dashed] (op) -- (0,-8);
+        \draw[dashed] (ui) -- (2.5,-8);
+        \draw[dashed] (api) -- (5,-8);
+        \draw[dashed] (bio) -- (7.5,-8);
+        \draw[dashed] (db) -- (10,-8);
+        
+        % Messages
+        \draw[arrow] (0,-1) -- node[above, font=\scriptsize] {Open Enroll} (2.5,-1);
+        \draw[arrow] (2.5,-1.5) -- node[above, font=\scriptsize] {POST /capture} (5,-1.5);
+        \draw[arrow] (5,-2) -- node[above, font=\scriptsize] {detect\_face()} (7.5,-2);
+        \draw[arrow] (7.5,-2.5) -- node[above, font=\scriptsize] {encoding 128D} (5,-2.5);
+        \draw[arrow] (2.5,-3) -- node[above, font=\scriptsize] {POST /fingerprint} (5,-3);
+        \draw[arrow] (5,-3.5) -- node[above, font=\scriptsize] {extract()} (7.5,-3.5);
+        \draw[arrow] (7.5,-4) -- node[above, font=\scriptsize] {features 30D} (5,-4);
+        \draw[arrow] (2.5,-4.5) -- node[above, font=\scriptsize] {POST /register} (5,-4.5);
+        \draw[arrow] (5,-5) -- node[above, font=\scriptsize] {validate consent} (7.5,-5);
+        \draw[arrow] (5,-5.5) -- node[above, font=\scriptsize] {generate\_uuid()} (7.5,-5.5);
+        \draw[arrow] (5,-6) -- node[above, font=\scriptsize] {encrypt()} (7.5,-6);
+        \draw[arrow] (5,-6.5) -- node[above, font=\scriptsize] {persist()} (10,-6.5);
+        \draw[arrow] (10,-7) -- node[above, font=\scriptsize] {OK} (5,-7);
+        \draw[arrow] (2.5,-7.5) -- node[above, font=\scriptsize] {BIO-XXXX} (0,-7.5);
+        
+    \end{tikzpicture}
+    \caption{Diagramme de séquence - Processus d'enrôlement}
+    \label{fig:seq-enroll}
+\end{figure}
+
+\section{API REST - Documentation Technique}
+
+\subsection{Endpoints d'Authentification}
+
+\begin{table}[H]
+    \centering
+    \caption{Endpoints d'authentification}
+    \label{tab:api-auth}
+    \begin{tabular}{|l|l|p{5cm}|c|}
+        \hline
+        \textbf{Méthode} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+        \hline
+        POST & /api/auth/login & Connexion utilisateur & Non \\
+        \hline
+        POST & /api/auth/logout & Déconnexion & JWT \\
+        \hline
+        POST & /api/auth/refresh & Rafraîchir token & Refresh \\
+        \hline
+        GET & /api/auth/me & Info utilisateur courant & JWT \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Endpoints Biométriques}
+
+\begin{table}[H]
+    \centering
+    \caption{Endpoints biométriques}
+    \label{tab:api-bio}
+    \begin{tabular}{|l|l|p{5cm}|c|}
+        \hline
+        \textbf{Méthode} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+        \hline
+        POST & /api/capture\_face & Capture et encode visage & JWT \\
+        \hline
+        POST & /api/process\_fingerprint & Traite empreinte digitale & JWT \\
+        \hline
+        POST & /api/process\_voice & Traite échantillon vocal & JWT \\
+        \hline
+        POST & /api/register & Enrôlement bénéficiaire & JWT \\
+        \hline
+        POST & /api/verify & Vérification 1:1 & JWT \\
+        \hline
+        POST & /api/identify & Identification 1:N & JWT \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Format des Réponses API}
+
+\begin{lstlisting}[caption={Format de réponse API},language={}]
+{
+  "success": true,
+  "timestamp": "2026-01-04T10:30:00.000Z",
+  "data": {
+    "bio_id": "BIO-A1B2C3D4-E5F6",
+    "confidence": {
+      "face": 94.5,
+      "fingerprint": 87.2
+    }
+  }
+}
+\end{lstlisting}
+
+\section{Configuration et Déploiement}
+
+\subsection{Variables de Configuration}
+
+\begin{lstlisting}[caption={Configuration principale (config.py)},language=Python]
+# Parametres capture faciale
+FACE_CAPTURE_COUNT = 5           # Captures pour moyenne
+FACE_DETECTION_MODEL = "hog"     # "hog" ou "cnn"
+FINGERPRINT_RESIZE = (300, 400)  # Normalisation empreinte
+
+# JWT Configuration
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+# Securite
+AES_KEY_SIZE = 256               # bits
+PBKDF2_ITERATIONS = 100000
+\end{lstlisting}
+
+% ============================================================================
+% CHAPITRE 3 : PIPELINE BIOMÉTRIQUE
+% ============================================================================
+\chapter{Pipeline Biométrique}
+
+\section{Reconnaissance Faciale}
+
+\subsection{Algorithme de Détection}
+
+Le système utilise la bibliothèque \texttt{face\_recognition} basée sur \textbf{dlib} :
+
+\begin{table}[H]
+    \centering
+    \caption{Pipeline de reconnaissance faciale}
+    \label{tab:face-pipeline}
+    \begin{tabular}{|c|l|l|}
+        \hline
+        \textbf{Étape} & \textbf{Description} & \textbf{Paramètres} \\
+        \hline
+        1 & Détection (HOG) & model="hog" \\
+        \hline
+        2 & Landmarks (68 points) & dlib automatic \\
+        \hline
+        3 & Encodage (ResNet) & 128 dimensions \\
+        \hline
+        4 & Comparaison (Euclidienne) & Seuil: 0.6 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Processus Multi-Capture}
+
+\begin{lstlisting}[caption={Classe FaceCapture},language=Python]
+class FaceCapture:
+    def __init__(self, capture_count=5):
+        """
+        Capture multiple images pour moyennage robuste
+        Args:
+            capture_count: Nombre de captures (defaut: 5)
+        """
+        self.capture_count = capture_count
+        self.encodings = []
+    
+    def get_average_encoding(self):
+        """
+        Moyenne des encodages pour reduire la variance
+        Returns:
+            numpy.ndarray: Vecteur 128D moyenne
+        """
+        return np.mean(self.encodings, axis=0)
+\end{lstlisting}
+
+\subsection{Fonction de Comparaison}
+
+La distance euclidienne entre deux encodages faciaux est calculée comme suit :
+
+\begin{equation}
+    d(e_1, e_2) = \sqrt{\sum_{i=1}^{128} (e_1^i - e_2^i)^2}
+    \label{eq:euclidean}
+\end{equation}
+
+\noindent Où :
+\begin{itemize}
+    \item $e_1, e_2$ sont les encodages faciaux (vecteurs 128D)
+    \item $d$ est la distance euclidienne
+    \item \textbf{Match} si $d \leq 0.6$
+\end{itemize}
+
+\section{Empreintes Digitales}
+
+\subsection{Pipeline de Traitement}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.2cm,
+        block/.style={rectangle, draw, fill=bioid-blue!20, minimum width=2cm, minimum height=0.8cm, align=center, font=\small},
+        arrow/.style={->, >=stealth, thick}
+    ]
+        \node[block] (input) {Input\\Image};
+        \node[block, right=of input] (preprocess) {Preprocess\\(CLAHE)};
+        \node[block, right=of preprocess] (skeleton) {Skeleton\\Extract};
+        \node[block, right=of skeleton] (minutiae) {Minutiae\\Detection};
+        \node[block, below=of minutiae] (normalize) {Normalize\\\& Filter};
+        \node[block, left=of normalize] (feature) {Feature\\Vector};
+        
+        \draw[arrow] (input) -- (preprocess);
+        \draw[arrow] (preprocess) -- (skeleton);
+        \draw[arrow] (skeleton) -- (minutiae);
+        \draw[arrow] (minutiae) -- (normalize);
+        \draw[arrow] (normalize) -- (feature);
+    \end{tikzpicture}
+    \caption{Pipeline de traitement des empreintes digitales}
+    \label{fig:fp-pipeline}
+\end{figure}
+
+\subsection{Étapes de Prétraitement}
+
+\begin{lstlisting}[caption={Prétraitement de l'empreinte},language=Python]
+def preprocess(self):
+    """Pipeline de pretraitement de l'empreinte"""
+    # 1. Redimensionnement (300x400)
+    img = cv2.resize(self.image, (300, 400))
+    
+    # 2. Normalisation
+    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+    
+    # 3. CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    img = clahe.apply(img)
+    
+    # 4. Flou gaussien
+    img = cv2.GaussianBlur(img, (5, 5), 0)
+    
+    # 5. Binarisation adaptative
+    img = cv2.adaptiveThreshold(
+        img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY_INV, 11, 2
+    )
+    
+    # 6. Operations morphologiques
+    kernel = np.ones((3, 3), np.uint8)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    
+    return img
+\end{lstlisting}
+
+\subsection{Extraction des Minutiae}
+
+\begin{table}[H]
+    \centering
+    \caption{Types de minutiae}
+    \label{tab:minutiae}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Type} & \textbf{Description} & \textbf{Détection} \\
+        \hline
+        Terminaison & Fin d'une crête papillaire & 1 voisin (8-connexité) \\
+        \hline
+        Bifurcation & Division d'une crête & 3 voisins (8-connexité) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Vecteur de Caractéristiques}
+
+Le vecteur final comprend environ \textbf{30 dimensions} :
+
+\begin{table}[H]
+    \centering
+    \caption{Composition du vecteur de caractéristiques}
+    \label{tab:features}
+    \begin{tabular}{|l|c|l|}
+        \hline
+        \textbf{Feature} & \textbf{Dimensions} & \textbf{Description} \\
+        \hline
+        Comptages minutiae & 3 & Terminaisons, bifurcations, total \\
+        \hline
+        Positions moyennes & 4 & mean(x), std(x), mean(y), std(y) \\
+        \hline
+        Angles & 2 & mean($\theta$), std($\theta$) \\
+        \hline
+        Distances inter-minutiae & 4 & mean, std, min, max \\
+        \hline
+        Histogramme d'orientation & 16 & 16 bins sur $[-\pi, \pi]$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Comparaison par Similarité Cosinus}
+
+\begin{equation}
+    \text{similarity}(f_1, f_2) = \frac{f_1 \cdot f_2}{\|f_1\| \times \|f_2\|}
+    \label{eq:cosine}
+\end{equation}
+
+\noindent \textbf{Match} si $\text{similarity} \geq 0.7$
+
+\section{Reconnaissance Vocale (Optionnel)}
+
+\subsection{Extraction MFCC}
+
+\begin{lstlisting}[caption={Extraction des caractéristiques vocales},language=Python]
+def extract_features(self):
+    """Extrait les MFCC (Mel-Frequency Cepstral Coefficients)"""
+    # Parametres
+    n_mfcc = 13
+    hop_length = 512
+    n_fft = 2048
+    
+    # Extraction
+    mfccs = librosa.feature.mfcc(
+        y=self.audio, 
+        sr=self.sample_rate,
+        n_mfcc=n_mfcc
+    )
+    
+    # Statistiques temporelles
+    return np.concatenate([
+        np.mean(mfccs, axis=1),
+        np.std(mfccs, axis=1),
+        np.max(mfccs, axis=1)
+    ])
+\end{lstlisting}
+
+\section{Fusion Multimodale}
+
+\subsection{Stratégie de Fusion}
+
+Le système utilise une \textbf{fusion au niveau score} :
+
+\begin{equation}
+    \text{Score}_{\text{final}} = w_f \cdot S_{\text{face}} + w_{fp} \cdot S_{\text{fingerprint}} + w_v \cdot S_{\text{voice}}
+    \label{eq:fusion}
+\end{equation}
+
+\noindent Avec les poids par défaut :
+\begin{itemize}
+    \item $w_f = 0.5$ (visage)
+    \item $w_{fp} = 0.4$ (empreinte)
+    \item $w_v = 0.1$ (voix)
+\end{itemize}
+
+\section{Génération d'Identifiants Uniques}
+
+\subsection{Format BioID}
+
+\begin{tcolorbox}[colback=gray!10,colframe=gray!50,title=Format de l'identifiant BioID]
+\centering
+\texttt{BIO-XXXXXXXX-XXXX}\\[0.3cm]
+\begin{tabular}{ll}
+    \texttt{BIO} & Préfixe fixe \\
+    \texttt{XXXXXXXX} & 8 premiers caractères UUID \\
+    \texttt{XXXX} & 4 derniers caractères UUID \\
+\end{tabular}
+\end{tcolorbox}
+
+% ============================================================================
+% CHAPITRE 4 : SÉCURITÉ ET CONFIANCE NUMÉRIQUE
+% ============================================================================
+\chapter{Sécurité et Confiance Numérique}
+
+\section{Architecture de Sécurité}
+
+\subsection{Modèle de Défense en Profondeur}
+
+\begin{table}[H]
+    \centering
+    \caption{Couches de sécurité}
+    \label{tab:security-layers}
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Couche} & \textbf{Mécanismes} \\
+        \hline
+        L1: Réseau & HTTPS/TLS 1.3, Nginx Reverse Proxy \\
+        \hline
+        L2: Application & JWT Auth, RBAC, Rate Limiting \\
+        \hline
+        L3: Données & AES-256 Chiffrement, Hashing SHA-256 \\
+        \hline
+        L4: Audit & Journalisation complète, Alertes sécurité \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Authentification et Autorisation}
+
+\subsection{Système RBAC (Role-Based Access Control)}
+
+\begin{table}[H]
+    \centering
+    \caption{Rôles et permissions}
+    \label{tab:rbac}
+    \begin{tabular}{|l|l|p{6cm}|}
+        \hline
+        \textbf{Rôle} & \textbf{Description} & \textbf{Permissions} \\
+        \hline
+        Admin & Administrateur système & Toutes les permissions \\
+        \hline
+        Agent & Opérateur terrain & Enrôlement, Vérification, Lecture \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Matrice des Permissions}
+
+\begin{lstlisting}[caption={Configuration RBAC},language=Python]
+ROLE_PERMISSIONS = {
+    Role.ADMIN: [
+        Permission.ENROLL_CREATE,
+        Permission.ENROLL_READ,
+        Permission.ENROLL_UPDATE,
+        Permission.ENROLL_DELETE,
+        Permission.VERIFY_EXECUTE,
+        Permission.IDENTIFY_EXECUTE,
+        Permission.DATA_READ,
+        Permission.DATA_EXPORT,
+        Permission.DATA_DELETE,
+        Permission.AUDIT_READ,
+        Permission.AUDIT_EXPORT,
+        Permission.ADMIN_USERS,
+        Permission.ADMIN_CONFIG,
+        Permission.ADMIN_KEYS,
+    ],
+    
+    Role.AGENT: [
+        Permission.ENROLL_CREATE,
+        Permission.ENROLL_READ,
+        Permission.ENROLL_UPDATE,
+        Permission.VERIFY_EXECUTE,
+        Permission.IDENTIFY_EXECUTE,
+        Permission.DATA_READ,
+        Permission.AUDIT_READ,
+    ]
+}
+\end{lstlisting}
+
+\subsection{Tokens JWT}
+
+\begin{lstlisting}[caption={Structure du token JWT},language={}]
+{
+    "sub": "username",
+    "role": "admin",
+    "user_id": 1,
+    "exp": 1735990800,
+    "type": "access"
+}
+\end{lstlisting}
+
+\section{Chiffrement des Données Biométriques}
+
+\subsection{Algorithme de Chiffrement}
+
+Le système utilise \textbf{Fernet} (basé sur AES-128-CBC avec HMAC) :
+
+\begin{lstlisting}[caption={SecurityManager - Chiffrement},language=Python]
+class SecurityManager:
+    def __init__(self, key_file="data/keys/master.key"):
+        self.secret_key = self._load_or_generate_key()
+        self.fernet = Fernet(self._derive_key(self.secret_key))
+    
+    def _derive_key(self, secret):
+        """Derive une cle Fernet via PBKDF2"""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'bioid_salt_v1',
+            iterations=100000,
+        )
+        return base64.urlsafe_b64encode(kdf.derive(secret))
+\end{lstlisting}
+
+\subsection{Protection des Descripteurs}
+
+\begin{lstlisting}[caption={Chiffrement des descripteurs biométriques},language=Python]
+def encrypt_descriptor(self, descriptor):
+    """
+    Chiffre un descripteur biometrique
+    
+    Args:
+        descriptor: numpy array (encodage facial/empreinte)
+    
+    Returns:
+        str: Base64 du descripteur chiffre
+    """
+    data = json.dumps(descriptor.tolist()).encode()
+    encrypted = self.fernet.encrypt(data)
+    return base64.b64encode(encrypted).decode()
+\end{lstlisting}
+
+\section{Conformité RGPD / Loi 09-08}
+
+\subsection{Principes Implémentés}
+
+\begin{table}[H]
+    \centering
+    \caption{Conformité aux principes RGPD}
+    \label{tab:rgpd}
+    \begin{tabular}{|l|p{8cm}|}
+        \hline
+        \textbf{Principe RGPD} & \textbf{Implémentation} \\
+        \hline
+        Licéité & Consentement explicite requis \\
+        \hline
+        Limitation des finalités & Finalité unique: distribution aide \\
+        \hline
+        Minimisation & Seuls descripteurs stockés (pas d'images) \\
+        \hline
+        Exactitude & Mécanismes de mise à jour \\
+        \hline
+        Limitation conservation & Politique 5 ans + suppression auto \\
+        \hline
+        Intégrité/Confidentialité & AES-256, RBAC, TLS \\
+        \hline
+        Responsabilité & Audit complet \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Politiques de Rétention}
+
+\begin{table}[H]
+    \centering
+    \caption{Politiques de rétention des données}
+    \label{tab:retention}
+    \begin{tabular}{|l|c|l|}
+        \hline
+        \textbf{Type de Données} & \textbf{Durée} & \textbf{Base Légale} \\
+        \hline
+        Données bénéficiaires & 5 ans & Consentement \\
+        \hline
+        Logs d'audit & 7 ans & Intérêt légitime \\
+        \hline
+        Métriques & 1 an & Intérêt légitime \\
+        \hline
+        Données temporaires & 24h & Traitement \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Journalisation d'Audit}
+
+\subsection{Types d'Événements}
+
+\begin{lstlisting}[caption={Types d'événements d'audit},language=Python]
+class AuditEventType(Enum):
+    ENROLLMENT = "enrollment"
+    AUTHENTICATION = "authentication"
+    IDENTIFICATION = "identification"
+    VERIFICATION = "verification"
+    DATA_ACCESS = "data_access"
+    DATA_MODIFICATION = "data_modification"
+    DATA_DELETION = "data_deletion"
+    CONSENT_GIVEN = "consent_given"
+    CONSENT_WITHDRAWN = "consent_withdrawn"
+    LOGIN = "login"
+    LOGOUT = "logout"
+    FAILED_AUTH = "failed_authentication"
+    SECURITY_ALERT = "security_alert"
+\end{lstlisting}
+
+\section{Analyse des Risques}
+
+\subsection{Modèle de Menaces}
+
+\begin{table}[H]
+    \centering
+    \caption{Modèle de menaces}
+    \label{tab:threats}
+    \begin{tabular}{|l|l|l|c|}
+        \hline
+        \textbf{Acteur} & \textbf{Motivation} & \textbf{Capacités} & \textbf{Prob.} \\
+        \hline
+        Bénéficiaire malveillant & Fraude & Spoofing basique & Haute \\
+        \hline
+        Crime organisé & Fraude massive & Spoofing avancé & Moyenne \\
+        \hline
+        Menace interne & Vol de données & Accès système & Basse \\
+        \hline
+        Acteur étatique & Surveillance & Attaques avancées & Basse \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Vecteurs d'Attaque et Mitigations}
+
+\begin{table}[H]
+    \centering
+    \caption{Vecteurs d'attaque et mitigations}
+    \label{tab:attacks}
+    \begin{tabular}{|l|p{3.5cm}|p{3.5cm}|c|}
+        \hline
+        \textbf{Attaque} & \textbf{Description} & \textbf{Mitigation} & \textbf{Niveau} \\
+        \hline
+        Face spoofing & Photo/vidéo replay & Multi-capture, liveness & Moyen \\
+        \hline
+        FP spoofing & Empreintes gélatine & Validation qualité & Haut \\
+        \hline
+        Template attack & Vol templates chiffrés & AES-256, rotation & Haut \\
+        \hline
+        Replay attack & Rejeu de session & JWT, timestamps & Haut \\
+        \hline
+        SQL Injection & Manipulation BDD & ORM, validation & Haut \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 5 : ÉVALUATION BIOMÉTRIQUE
+% ============================================================================
+\chapter{Évaluation Biométrique}
+
+\section{Métriques de Performance}
+
+\subsection{Définitions}
+
+\begin{table}[H]
+    \centering
+    \caption{Métriques biométriques}
+    \label{tab:metrics-def}
+    \begin{tabular}{|l|p{5cm}|l|}
+        \hline
+        \textbf{Métrique} & \textbf{Définition} & \textbf{Formule} \\
+        \hline
+        FAR & False Acceptance Rate & $\frac{\text{Imposteurs acceptés}}{\text{Total imposteurs}} \times 100$ \\
+        \hline
+        FRR & False Rejection Rate & $\frac{\text{Légitimes rejetés}}{\text{Total légitimes}} \times 100$ \\
+        \hline
+        EER & Equal Error Rate & Point où $FAR = FRR$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Calcul FAR/FRR}
+
+\begin{lstlisting}[caption={Calcul des métriques FAR/FRR},language=Python]
+def calculate_far_frr(self, threshold, modality=None):
+    """
+    Calcule FAR et FRR pour un seuil donne
+    
+    Pour distances (plus bas = meilleur):
+    - FAR: imposteurs avec score <= threshold
+    - FRR: legitimes avec score > threshold
+    """
+    genuine_scores = [r["score"] for r in genuine]
+    impostor_scores = [r["score"] for r in impostor]
+    
+    far = sum(1 for s in impostor_scores if s <= threshold) / len(impostor_scores)
+    frr = sum(1 for s in genuine_scores if s > threshold) / len(genuine_scores)
+    
+    return far * 100, frr * 100
+\end{lstlisting}
+
+\subsection{Calcul EER}
+
+\begin{lstlisting}[caption={Calcul de l'EER},language=Python]
+def calculate_eer(self, modality=None):
+    """
+    Trouve le point d'intersection FAR = FRR
+    via interpolation lineaire
+    """
+    thresholds = np.linspace(all_scores.min(), all_scores.max(), 100)
+    
+    for t in thresholds:
+        far = np.mean(impostor_scores <= t) * 100
+        frr = np.mean(genuine_scores > t) * 100
+        fars.append(far)
+        frrs.append(frr)
+    
+    # Trouver intersection
+    diff = np.array(fars) - np.array(frrs)
+    idx = np.argmin(np.abs(diff))
+    eer = (fars[idx] + frrs[idx]) / 2
+    
+    return eer, thresholds[idx]
+\end{lstlisting}
+
+\section{Courbes de Performance}
+
+\subsection{Courbe ROC (Receiver Operating Characteristic)}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{scope}
+            \draw[->] (0,0) -- (5,0) node[right] {FPR (FAR)};
+            \draw[->] (0,0) -- (0,5) node[above] {TPR (1-FRR)};
+            
+            % Grille
+            \foreach \x in {1,2,3,4} {
+                \draw[gray!30] (\x,0) -- (\x,4.5);
+                \draw[gray!30] (0,\x) -- (4.5,\x);
+            }
+            
+            % Labels axes
+            \foreach \x/\label in {1/0.2, 2/0.4, 3/0.6, 4/0.8} {
+                \node[below, font=\tiny] at (\x,0) {\label};
+                \node[left, font=\tiny] at (0,\x) {\label};
+            }
+            
+            % Ligne diagonale (random)
+            \draw[dashed, gray] (0,0) -- (4.5,4.5);
+            
+            % Courbe ROC
+            \draw[thick, bioid-blue] (0,0) .. controls (0.2,3) and (1,4) .. (4.5,4.5);
+            
+            % Point EER
+            \fill[bioid-red] (1,3.5) circle (2pt);
+            \node[right, font=\small] at (1.1,3.5) {EER};
+        \end{scope}
+    \end{tikzpicture}
+    \caption{Courbe ROC typique}
+    \label{fig:roc}
+\end{figure}
+
+\section{Analyse par Modalité}
+
+\subsection{Performances Attendues}
+
+\begin{table}[H]
+    \centering
+    \caption{Performances attendues par modalité}
+    \label{tab:perf-modalite}
+    \begin{tabular}{|l|c|c|l|}
+        \hline
+        \textbf{Modalité} & \textbf{EER Typique} & \textbf{Seuil Optimal} & \textbf{Observations} \\
+        \hline
+        Visage & 1-3\% & 0.6 (distance) & Sensible à l'éclairage \\
+        \hline
+        Empreinte & 0.5-2\% & 0.7 (similarité) & Très fiable \\
+        \hline
+        Voix & 3-5\% & 0.3 (distance) & Sensible au bruit \\
+        \hline
+        Fusion & 0.5-1\% & Variable & Meilleure performance \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Analyse des Biais}
+
+\subsection{Dimensions Démographiques}
+
+Le système évalue les biais potentiels sur :
+\begin{itemize}
+    \item \textbf{Genre} : Homme/Femme
+    \item \textbf{Âge} : Jeune/Âgé
+    \item \textbf{Ethnicité} : Requiert audit externe
+\end{itemize}
+
+\subsection{Métriques d'Équité}
+
+\begin{equation}
+    \text{Mean Absolute Bias} = \frac{1}{n} \sum_{i=1}^{n} |acc_i - \bar{acc}|
+    \label{eq:mab}
+\end{equation}
+
+\begin{equation}
+    \text{Max Bias} = \max(acc) - \min(acc)
+    \label{eq:maxbias}
+\end{equation}
+
+\begin{equation}
+    \text{Accuracy Ratio} = \frac{\min(acc)}{\max(acc)}
+    \label{eq:accratio}
+\end{equation}
+
+\section{Indicateurs de Qualité}
+
+\begin{table}[H]
+    \centering
+    \caption{Indicateurs de qualité système}
+    \label{tab:quality}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Indicateur} & \textbf{Excellent} & \textbf{Bon} & \textbf{Acceptable} & \textbf{Insuffisant} \\
+        \hline
+        EER & $<$ 1\% & 1-3\% & 3-5\% & $>$ 5\% \\
+        \hline
+        FAR @ FRR=1\% & $<$ 0.1\% & 0.1-1\% & 1-5\% & $>$ 5\% \\
+        \hline
+        Échantillon genuine & $>$ 1000 & 500-1000 & 100-500 & $<$ 100 \\
+        \hline
+        Échantillon impostor & $>$ 1000 & 500-1000 & 100-500 & $<$ 100 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 6 : LIMITES ET PERSPECTIVES
+% ============================================================================
+\chapter{Limites et Perspectives}
+
+\section{Limitations Actuelles}
+
+\subsection{Limitations Techniques}
+
+\begin{table}[H]
+    \centering
+    \caption{Limitations techniques}
+    \label{tab:limitations}
+    \begin{tabular}{|p{4cm}|p{5cm}|c|}
+        \hline
+        \textbf{Limitation} & \textbf{Impact} & \textbf{Criticité} \\
+        \hline
+        Pas de détection de vivacité & Vulnérable au spoofing photo/vidéo & \textcolor{bioid-red}{Haute} \\
+        \hline
+        Base JSON locale & Performance limitée en scale & \textcolor{bioid-orange}{Moyenne} \\
+        \hline
+        Pas d'indexation ANN & Identification O(N) lente & \textcolor{bioid-orange}{Moyenne} \\
+        \hline
+        Dépendance à dlib & Installation complexe & \textcolor{bioid-green}{Basse} \\
+        \hline
+        Capture voix non robuste & Sensible au bruit ambiant & \textcolor{bioid-orange}{Moyenne} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Limitations de Sécurité}
+
+\begin{table}[H]
+    \centering
+    \caption{Vulnérabilités et mitigations recommandées}
+    \label{tab:vulnerabilities}
+    \begin{tabular}{|l|l|p{4cm}|}
+        \hline
+        \textbf{Vulnérabilité} & \textbf{Risque} & \textbf{Mitigation Recommandée} \\
+        \hline
+        Spoofing facial & Photo imprimée acceptée & Détection de vivacité 3D \\
+        \hline
+        Empreinte synthétique & Gélatine/silicone & Capteur capacitif + thermique \\
+        \hline
+        Attaque brute force & Tokens JWT & Rate limiting, MFA \\
+        \hline
+        Vol de clé maître & Compromission totale & HSM, rotation des clés \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Perspectives d'Amélioration}
+
+\subsection{Court Terme (3-6 mois)}
+
+\begin{enumerate}
+    \item \textbf{Détection de Vivacité (Liveness Detection)}
+    \begin{itemize}
+        \item Détection de clignement des yeux
+        \item Analyse de texture de peau
+        \item Challenge aléatoire (tourner la tête)
+    \end{itemize}
+    
+    \item \textbf{Amélioration des Performances}
+    \begin{itemize}
+        \item Migration vers indexation FAISS/Annoy pour 1:N
+        \item Cache Redis pour sessions/templates fréquents
+        \item Optimisation des requêtes PostgreSQL
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Moyen Terme (6-12 mois)}
+
+\begin{enumerate}
+    \item \textbf{Architecture Distribuée}
+    \begin{itemize}
+        \item Déploiement Kubernetes multi-nœuds
+        \item Base de données répliquée
+        \item Load balancing et auto-scaling
+    \end{itemize}
+    
+    \item \textbf{Sécurité Renforcée}
+    \begin{itemize}
+        \item Hardware Security Module (HSM) pour clés
+        \item Authentification multi-facteur (MFA)
+        \item Zero-Trust Architecture
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Long Terme (12-24 mois)}
+
+\begin{enumerate}
+    \item \textbf{Biométrie Avancée}
+    \begin{itemize}
+        \item Reconnaissance de l'iris
+        \item Biométrie comportementale (démarche, frappe clavier)
+        \item Analyse veineuse de la paume
+    \end{itemize}
+    
+    \item \textbf{Intelligence Artificielle}
+    \begin{itemize}
+        \item Modèles de deep learning personnalisés
+        \item Détection de morphing facial
+        \item Auto-calibration des seuils par ML
+    \end{itemize}
+\end{enumerate}
+
+\section{Recommandations}
+
+\subsection{Recommandations Techniques}
+
+\begin{table}[H]
+    \centering
+    \caption{Recommandations prioritaires}
+    \label{tab:recommendations}
+    \begin{tabular}{|c|p{5cm}|p{5cm}|}
+        \hline
+        \textbf{Priorité} & \textbf{Recommandation} & \textbf{Justification} \\
+        \hline
+        P0 & Implémenter liveness detection & Vulnérabilité critique \\
+        \hline
+        P0 & Backup automatique & Protection des données \\
+        \hline
+        P1 & Migration ANN (FAISS) & Scalabilité \\
+        \hline
+        P1 & Rate limiting API & Sécurité \\
+        \hline
+        P2 & Application mobile & Accessibilité terrain \\
+        \hline
+        P2 & Multi-langue & Inclusion \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Recommandations Organisationnelles}
+
+\begin{enumerate}
+    \item \textbf{Audit de sécurité annuel} par tiers indépendant
+    \item \textbf{Tests de pénétration} trimestriels
+    \item \textbf{Formation continue} des opérateurs
+    \item \textbf{Revue éthique} du comité de surveillance
+    \item \textbf{Documentation à jour} et versionnée
+\end{enumerate}
+
+\section{Feuille de Route}
+
+\begin{table}[H]
+    \centering
+    \caption{Feuille de route 2026-2027}
+    \label{tab:roadmap}
+    \begin{tabular}{|l|p{10cm}|}
+        \hline
+        \textbf{Période} & \textbf{Objectifs} \\
+        \hline
+        2026-Q1 & Liveness detection (phase 1), Backup automatique, Rate limiting \\
+        \hline
+        2026-Q2 & Migration FAISS, Application mobile (prototype), Multi-langue \\
+        \hline
+        2026-Q3 & Architecture Kubernetes, HSM pour clés, Dashboard analytics \\
+        \hline
+        2026-Q4 & Certification ISO 27001, Audit sécurité externe, Liveness (phase 2) \\
+        \hline
+        2027 & Biométrie iris, Interopérabilité OSIA, IA prédictive anti-fraude \\
+        \hline
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+% ANNEXES
+% ============================================================================
+\appendix
+
+\chapter{Glossaire}
+
+\begin{longtable}{|l|p{10cm}|}
+    \hline
+    \textbf{Terme} & \textbf{Définition} \\
+    \hline
+    \endfirsthead
+    \hline
+    \textbf{Terme} & \textbf{Définition} \\
+    \hline
+    \endhead
+    FAR & False Acceptance Rate - Taux de fausse acceptation \\
+    \hline
+    FRR & False Rejection Rate - Taux de faux rejet \\
+    \hline
+    EER & Equal Error Rate - Taux d'erreur égal \\
+    \hline
+    HOG & Histogram of Oriented Gradients \\
+    \hline
+    MFCC & Mel-Frequency Cepstral Coefficients \\
+    \hline
+    RBAC & Role-Based Access Control \\
+    \hline
+    JWT & JSON Web Token \\
+    \hline
+    AES & Advanced Encryption Standard \\
+    \hline
+    PBKDF2 & Password-Based Key Derivation Function 2 \\
+    \hline
+    CLAHE & Contrast Limited Adaptive Histogram Equalization \\
+    \hline
+    Minutiae & Points caractéristiques d'une empreinte \\
+    \hline
+    RGPD & Règlement Général sur la Protection des Données \\
+    \hline
+    HSM & Hardware Security Module \\
+    \hline
+    DPIA & Data Protection Impact Assessment \\
+    \hline
+    ANN & Approximate Nearest Neighbor \\
+    \hline
+\end{longtable}
+
+\chapter{Références Techniques}
+
+\begin{enumerate}
+    \item \textbf{face\_recognition} - \url{https://github.com/ageitgey/face_recognition}
+    \item \textbf{dlib} - \url{http://dlib.net/}
+    \item \textbf{OpenCV} - \url{https://opencv.org/}
+    \item \textbf{scikit-image} - \url{https://scikit-image.org/}
+    \item \textbf{Flask} - \url{https://flask.palletsprojects.com/}
+    \item \textbf{Cryptography} - \url{https://cryptography.io/}
+\end{enumerate}
+
+\chapter{Conformité Légale}
+
+\begin{itemize}
+    \item \textbf{RGPD} - Règlement (UE) 2016/679
+    \item \textbf{Loi 09-08} - Loi marocaine relative à la protection des personnes physiques
+    \item \textbf{ISO/IEC 24745} - Protection des templates biométriques
+    \item \textbf{ISO/IEC 19795} - Testing and reporting for biometric systems
+\end{itemize}
+
+% ============================================================================
+% CONCLUSION
+% ============================================================================
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+
+Le projet \textbf{BioID} représente une solution complète et robuste pour l'identification biométrique multimodale dans le contexte de l'aide sociale. À travers ce rapport, nous avons présenté les différentes facettes de ce système, de son architecture technique à son évaluation selon les standards biométriques internationaux.
+
+\section*{Synthèse des Réalisations}
+
+Les principales réalisations de ce projet incluent :
+
+\begin{itemize}
+    \item \textbf{Architecture modulaire} : Un système bien structuré avec une séparation claire des responsabilités, facilitant la maintenance et l'évolution
+    
+    \item \textbf{Pipeline biométrique complet} : Intégration de trois modalités (visage, empreinte, voix) avec des algorithmes éprouvés et une stratégie de fusion au niveau score
+    
+    \item \textbf{Sécurité renforcée} : Chiffrement AES-256 des données biométriques, authentification JWT, contrôle d'accès RBAC et journalisation d'audit complète
+    
+    \item \textbf{Conformité légale} : Respect des principes RGPD et de la Loi marocaine 09-08, avec gestion du consentement et droit à l'effacement
+    
+    \item \textbf{Métriques d'évaluation} : Implémentation des calculs FAR, FRR et EER pour évaluer objectivement les performances du système
+\end{itemize}
+
+\section*{Apports du Projet}
+
+Ce projet nous a permis d'appréhender concrètement les enjeux de la \textbf{confiance numérique} dans le domaine de la biométrie :
+
+\begin{enumerate}
+    \item La complexité de concevoir un système à la fois performant et respectueux de la vie privée
+    \item L'importance de la traçabilité et de l'audit dans les systèmes d'identification
+    \item Les défis liés aux biais algorithmiques et à l'équité des systèmes biométriques
+    \item La nécessité d'une approche de sécurité en profondeur (defense in depth)
+\end{enumerate}
+
+\section*{Perspectives}
+
+Bien que fonctionnel, le système BioID présente des axes d'amélioration identifiés, notamment :
+
+\begin{itemize}
+    \item L'implémentation de la \textbf{détection de vivacité} pour contrer les attaques par spoofing
+    \item L'optimisation des performances avec une \textbf{indexation ANN} (FAISS) pour les recherches 1:N à grande échelle
+    \item Le déploiement d'une \textbf{architecture distribuée} pour la haute disponibilité
+    \item L'intégration de modalités biométriques supplémentaires (iris, veines de la paume)
+\end{itemize}
+
+\vspace{1cm}
+
+\begin{center}
+\begin{tcolorbox}[colback=bioid-green!10,colframe=bioid-green,width=0.9\textwidth]
+\centering
+Ce projet démontre que la biométrie multimodale, lorsqu'elle est correctement implémentée avec des garanties de sécurité et de conformité, peut offrir une solution viable et éthique pour l'identification des populations vulnérables dans le cadre de l'aide humanitaire.
+\end{tcolorbox}
+\end{center}
+
+\vfill
+
+\begin{center}
+    \rule{0.5\textwidth}{0.4pt}\\[0.5cm]
+    \textit{BioID v2.0 - Système d'Identification Biométrique Multimodal}\\[0.2cm]
+    \textit{ENSET Mohammadia - Année Académique 2025-2026}
+\end{center}
+
+\end{document}
